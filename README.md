@@ -8,7 +8,7 @@
 [![AI](https://img.shields.io/badge/AI-Multimodal-purple)](#sec46)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](#sec54)
 
-🌐 **Language** --- [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
+**Language** --- [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
@@ -85,31 +85,31 @@ Sentinel is not designed as a single-purpose monitoring tool. Instead, it aims t
 <tr>
 <td width="50%">
 
-- 📱 **Self-developed Android camera client (CamFlow)**  
+- **Self-developed Android camera client (CamFlow)**  
   A regular smartphone can be used as a real-time camera endpoint, without purchasing dedicated IP cameras or extra hardware.
 
-- 📡 **Real-time MJPEG video preview in the browser**  
+- **Real-time MJPEG video preview in the browser**  
   Based on HTTP streaming output; can be viewed directly in a browser without plugins.
 
-- 📤 **Standardized image frame upload interface (HTTP POST)**  
+- **Standardized image frame upload interface (HTTP POST)**  
   The Android client continuously uploads single-frame JPEG images; the interface is clear and extensible.
 
-- 🎥 **Segmented local video recording (MP4) and real-time screenshots**  
+- **Segmented local video recording (MP4) and real-time screenshots**  
   Supports time-based segmentation for writing video/image files, suitable for long-term operation and archival management.
 
 </td>
 <td width="50%">
 
-- 🧩 **Layered, trigger-based visual processing mechanism**  
+- **Layered, trigger-based visual processing mechanism**  
   A two-stage architecture of “traditional CV algorithms → model inference” to improve real-time performance and reduce compute/inference costs.
 
-- 🧠 **Structured multimodal visual cognition**  
+- **Structured multimodal visual cognition**  
   After trigger conditions are met, a vision model is called for semantic analysis and structured outputs, supporting risk grading and event management.
 
-- 🌐 **UDP-based automatic server discovery**  
+- **UDP-based automatic server discovery**  
   The Android client can automatically discover the server address within the LAN, reducing manual configuration.
 
-- 📂 **Structured logging and configuration management**  
+- **Structured logging and configuration management**  
   Generates local runtime logs and AI event records to support traceability and data analysis.
 
 </td>
