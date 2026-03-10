@@ -1243,7 +1243,7 @@ Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 
   - **网络环境**：同一局域网（LAN / 同一 Wi-Fi）
 
 - Android 端（CamFlow）
-  - **系统版本**：Android 8.0+（建议按你实际最低支持版本填写）
+  - **系统版本**：Android 8.0+
   - **测试设备**：nova 8 SE 活力版（HarmonyOS 3.0.0）
   - **网络环境**：与 PC 同一 Wi-Fi / 同一局域网
   - **权限要求**：Camera（首次启动会请求）
