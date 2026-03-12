@@ -7,6 +7,7 @@
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 [![AI](https://img.shields.io/badge/AI-Multimodal-purple)](#sec46)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](#sec54)
+[![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/stargazers)
 
 **Language** --- [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
@@ -1311,3 +1312,10 @@ Copyright © 2026 Suzuran0y
 
 > Note: CamFlow involves image data capture and transmission.  
 > Ensure compliance with local laws and obtain appropriate authorization before use.
+
+---
+
+### Star History [⌃](#top)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=suzuran0y/CCTV-Smartphone-AI-Monitoring&type=Date)](https://star-history.com/#suzuran0y/Sentinel&Date)
+
