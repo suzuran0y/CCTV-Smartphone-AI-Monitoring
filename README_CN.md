@@ -8,6 +8,7 @@
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide_CN.md)
 [![AI](https://img.shields.io/badge/AI-Multimodal-purple)](#sec46)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](#sec54)
+[![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/stargazers)
 
 **语言** --- [🇨🇳 中文](README_CN.md) | [🇺🇸 English](README.md)
 
@@ -1283,3 +1284,9 @@ Sentinel 项目基于 MIT License 开源发布。
   - 稳定性与资源限额机制
 
 > 备注：CamFlow 作为摄像采集端，涉及图像数据采集与传输。请在使用前确保符合当地法律法规与场景授权要求。
+
+---
+
+### Star History [⌃](#top)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=suzuran0y/CCTV-Smartphone-AI-Monitoring&type=Date)](https://star-history.com/#suzuran0y/CCTV-Smartphone-AI-Monitoring&Date)
