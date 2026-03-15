@@ -540,8 +540,8 @@ Sentinel/
 在 cmd 终端执行：
 
 ```bash
-git clone https://github.com/suzuran0y/Sentinel.git
-cd Sentinel
+git clone https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring.git
+cd CCTV-Smartphone-AI-Monitoring
 ```
 
 ---
