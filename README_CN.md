@@ -14,6 +14,10 @@
 
 Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框架。
 
+<p align="center">
+  <img src="assets/readme_banner.png" alt="Sentinel Real-Time Monitoring System banner" width="92%">
+</p>
+
 ♻️ 支持将闲置安卓设备转化为网络摄像头节点，实现：
 
 - 局域网图像采集与上传；
