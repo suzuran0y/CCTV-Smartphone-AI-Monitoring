@@ -505,7 +505,7 @@ Sentinel/
 Execute in the cmd terminal:
 
 ```bash
-git clone https://github.com/suzuran0y/Sentinel.git
+git clone https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring.git
 cd Sentinel
 ```
 
@@ -1319,5 +1319,5 @@ Copyright © 2026 Suzuran0y
 
 ### Star History [⌃](#top)
 
-[![Star History Chart](https://api.star-history.com/svg?repos=suzuran0y/CCTV-Smartphone-AI-Monitoring&type=Date)](https://star-history.com/#suzuran0y/Sentinel&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=suzuran0y/CCTV-Smartphone-AI-Monitoring&type=Date)](https://star-history.com/#suzuran0y/CCTV-Smartphone-AI-Monitoring&Date)
 
