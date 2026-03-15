@@ -506,7 +506,7 @@ Execute in the cmd terminal:
 
 ```bash
 git clone https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring.git
-cd Sentinel
+cd CCTV-Smartphone-AI-Monitoring
 ```
 
 ---
