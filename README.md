@@ -14,7 +14,11 @@
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
 <p align="center">
-  <img src="assets/readme_banner.png" alt="Sentinel Real-Time Monitoring System banner" width="92%">
+  <img src="assets/readme_banner.png" width="92%">
+</p>
+
+<p align="center">
+  <em>Figure 1 – System banner (AI-generated — author's drawing skills not implemented ·_· )</em>
 </p>
 
 ♻️ It repurposes unused Android devices as network camera nodes, enabling:
@@ -260,7 +264,7 @@ This mechanism has the following characteristics:
 
 - **Fully localized storage and data control** — unlike traditional monitoring solutions that rely on SD cards or cloud storage, Sentinel saves video data directly on the LAN PC. Local disk storage avoids cloud service fees and third-party data risks, and also facilitates subsequent data analysis, model training, or secondary processing.
 
-</td> <td width="45%" align="center"> <img src="assets/dashboard_ingest_on.png" width="100%"> <br> <b>Figure 1 - Dashboard Live Preview Interface (Full-screen Mode)</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets/dashboard_ingest_on.png" width="100%"> <br> <b>Figure 2 - Dashboard Live Preview Interface (Full-screen Mode)</b> </td> </tr> </table>
 
 ---
 
@@ -293,7 +297,7 @@ Configures segmented writing and video encoding to avoid oversized single files 
 
 These parameters allow adjustments to “AI trigger sensitivity” and “model decision logic” via the Settings page, optimizing token usage and enabling personalized monitoring scenarios.
 
-</td> <td width="45%" align="center"> <img src="assets/dashboard_recording.png" width="100%"> <br> <b>Figure 2 - Dashboard Parameter Control Interface (Expanded View)</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets/dashboard_recording.png" width="100%"> <br> <b>Figure 3 - Dashboard Parameter Control Interface (Expanded View)</b> </td> </tr> </table>
 
 code line
 <a id="sec23"></a>
@@ -337,7 +341,7 @@ Prompt Template (role definition), Scene Profile (long-term scene context), Sess
 
 to make model behavior programmable and controllable.
 
-</td> <td width="45%" align="center"> <img src="assets\ai_monitoring_record.png" width="100%"> <br> <b>Figure 3 - AI Enabled Status</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets\ai_monitoring_record.png" width="100%"> <br> <b>Figure 4 - AI Enabled Status</b> </td> </tr> </table>
 
 ---
 
@@ -389,7 +393,7 @@ enabling the construction of a real-time vision system without additional hardwa
 <img src="assets/app_failed_hint.jpg" width="32%">
 
 <br>
-<b>Figure 4 - CamFlow Application Interface</b>
+<b>Figure 5 - CamFlow Application Interface</b>
 
 </td>
 </tr>
