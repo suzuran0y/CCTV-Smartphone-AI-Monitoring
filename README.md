@@ -13,6 +13,10 @@
 
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
+<p align="center">
+  <img src="assets/readme_banner.png" alt="Sentinel Real-Time Monitoring System banner" width="92%">
+</p>
+
 ♻️ It repurposes unused Android devices as network camera nodes, enabling:
 
 - Distributed image acquisition
