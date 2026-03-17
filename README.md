@@ -1,6 +1,6 @@
 <a id="top"></a>
 
-# Sentinel Real-Time Monitoring System **Language**
+# Sentinel Real-Time Monitoring System
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
@@ -42,7 +42,7 @@
 
 <br>
 
-<b>Xuanli199</b><br>
+<b>xuanli199</b><br>
 <sub><a href="https://www.bilibili.com/video/BV1srwxzMEdn/">Tech Review #93</a></sub>
 
 </td>
