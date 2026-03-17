@@ -1,0 +1,18 @@
+services:
+  cctv_smartphone_ai_monitoring:
+    build: .
+    container_name: cctv_smartphone_ai_monitoring
+    restart: unless-stopped  # 设置为开机自启/崩溃自动重启，非常适合监控
+    
+    # 挂载目录 (关键点)
+    volumes:
+      # 将容器内的 recordings 文件夹映射到当前目录的 recordings
+      # 这样即使容器被删除，你录制的视频也不会丢
+      - ./recordings:/app/recordings
+      
+      # ⚠️ 注意这里：已经去掉了冒号前面的空格！
+      - ./app/config/config.json:/app/app/config/config.json
+
+    # 端口映射 (按需取消注释)
+    ports:
+      - "8888:8000"
