@@ -13,6 +13,8 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
+🚀 Latest Update (ongoing): [v1.1.0 — 2026-03-18](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+
 ---
 
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
@@ -37,7 +39,7 @@ It adopts a layered architecture of **“mobile capture + PC processing + browse
 
 This project can be used both as a lightweight local monitoring system and as an engineering prototype platform for visual data acquisition and intelligent analysis.
 
-> 🚀 Before first use, it is strongly recommended to read the chapters in order. Click to jump:  
+> Before first use, it is strongly recommended to read the chapters in order. Click to jump:  
 > ① [Project Overview](#sec1) → ② [Project Deployment](#sec3) → ③ [Run the Project](#sec4) → ④ [Dashboard Guide](#sec43)
 
 ## Table of Contents
