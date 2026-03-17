@@ -1,15 +1,58 @@
 <a id="top"></a>
 
-# Sentinel Real-Time Monitoring System
+# Sentinel Real-Time Monitoring System **Language**
 
+[![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
+[![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#forks)
 ![Version](https://img.shields.io/badge/version-v1.0.0-black)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 [![AI](https://img.shields.io/badge/AI-Multimodal-purple)](#sec46)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](#sec54)
-[![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
+<br>
+[🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
-**Language** --- [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
+---
+
+## Community Recognition⭐
+
+<p align="center">
+
+<table align="center">
+<tr>
+
+<td align="center" width="50%">
+
+<a href="https://github.com/ruanyf/weekly">
+  <img src="https://github.com/ruanyf.png" width="100"/>
+</a>
+
+<br>
+
+<b>ruanyf</b><br>
+<sub><a href="https://github.com/ruanyf/weekly/blob/master/docs/issue-388.md">Weekly #388</a></sub>
+
+</td>
+
+<td align="center" width="50%">
+
+<a href="https://space.bilibili.com/67079745">
+  <img src="https://i0.hdslb.com/bfs/face/8a70069e1dc9ab89c1d688c2cefd3596864315ea.jpg" width="100"/>
+</a>
+
+<br>
+
+<b>Xuanli199</b><br>
+<sub><a href="https://www.bilibili.com/video/BV1srwxzMEdn/">Tech Review #93</a></sub>
+
+</td>
+
+</tr>
+</table>
+
+</p>
+
+---
 
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
