@@ -11,7 +11,7 @@
 <br>
 [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
-This project has been featured by [ruanyf's weekly](#CR) and [xuanli199's Tech Review](#CR). We sincerely appreciate their recognition and support.
+This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
 ---
 
