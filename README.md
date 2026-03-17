@@ -446,6 +446,14 @@ enabling the construction of a real-time vision system without additional hardwa
 
 ---
 
+### 🤝 Contributing
+
+This project is still evolving, and contributions and issues are **highly welcome**!
+
+If you have ideas, improvements, or bug fixes, feel free to open a PR or submit an issue. Even small contributions are meaningful — feel free to jump in.
+
+---
+
 <a id="sec3"></a>
 
 ## 3. Project Deployment [⌃](#top)
