@@ -23,12 +23,54 @@ class SettingsActivity : AppCompatActivity() {
         val swDebug = findViewById<Switch>(R.id.switchShowDebug)
         val swHide = findViewById<Switch>(R.id.switchHidePreview)
         val swStop = findViewById<Switch>(R.id.switchStopCamera)
+        val spinnerQuality = findViewById<Spinner>(R.id.spinnerImageQuality)
+        val spinnerUploadRate = findViewById<Spinner>(R.id.spinnerUploadRate)
+        val spinnerResolution = findViewById<Spinner>(R.id.spinnerResolution)
 
         swHide.isChecked = prefs.getBoolean("hidePreview", false)
         swStop.isChecked = prefs.getBoolean("stopCamera", false)
         swStop.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) swHide.isChecked = true
         }
+
+        val qualityOptions = listOf("Low", "Medium", "High")
+        val qualityAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            qualityOptions
+        )
+        qualityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerQuality.adapter = qualityAdapter
+
+        val savedQuality = prefs.getString("imageQualityLabel", "Medium") ?: "Medium"
+        val savedIndex = qualityOptions.indexOf(savedQuality).takeIf { it >= 0 } ?: 1
+        spinnerQuality.setSelection(savedIndex)
+
+        val uploadRateOptions = listOf("Low", "Medium", "High")
+        val uploadRateAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            uploadRateOptions
+        )
+        uploadRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerUploadRate.adapter = uploadRateAdapter
+
+        val savedUploadRate = prefs.getString("uploadRateLabel", "High") ?: "High"
+        val savedUploadRateIndex = uploadRateOptions.indexOf(savedUploadRate).takeIf { it >= 0 } ?: 2
+        spinnerUploadRate.setSelection(savedUploadRateIndex)
+
+        val resolutionOptions = listOf("Low", "Medium", "High")
+        val resolutionAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            resolutionOptions
+        )
+        resolutionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerResolution.adapter = resolutionAdapter
+
+        val savedResolution = prefs.getString("resolutionLabel", "Medium") ?: "Medium"
+        val savedResolutionIndex = resolutionOptions.indexOf(savedResolution).takeIf { it >= 0 } ?: 1
+        spinnerResolution.setSelection(savedResolutionIndex)
 
 
 // Initialize the switch status
@@ -82,6 +124,9 @@ class SettingsActivity : AppCompatActivity() {
                 .putBoolean("showDebug", swDebug.isChecked)
                 .putBoolean("hidePreview", swHide.isChecked)
                 .putBoolean("stopCamera", swStop.isChecked)
+                .putString("imageQualityLabel", spinnerQuality.selectedItem.toString())
+                .putString("uploadRateLabel", spinnerUploadRate.selectedItem.toString())
+                .putString("resolutionLabel", spinnerResolution.selectedItem.toString())
                 .apply()
 
             setResult(Activity.RESULT_OK)

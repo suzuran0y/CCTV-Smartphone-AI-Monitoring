@@ -34,10 +34,11 @@ class MainActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("phonecam", MODE_PRIVATE) }
     private var baseUrl: String? = null
     private var lastSentTs = 0L
-    private val minIntervalMs = 120L
+
+    private var lastAppliedResolutionLabel: String? = null
 
 // ===== Debug / Power control state =====
-private var dbgEnabledFlag = false
+    private var dbgEnabledFlag = false
     private var powerSaveFlag = false
     // ===== CameraX provider control =====
     private var camProviderRef: ProcessCameraProvider? = null
@@ -78,6 +79,8 @@ private var dbgEnabledFlag = false
 
         val hidePreviewFlag = prefs.getBoolean("hidePreview", true)
         val stopCameraFlag = prefs.getBoolean("stopCamera", false)
+        val currentResolutionLabel = getResolutionLabel()
+        val resolutionChanged = currentResolutionLabel != lastAppliedResolutionLabel
 
         powerSaveFlag = stopCameraFlag
         mainHandler.removeCallbacks(debugUpdater)
@@ -88,11 +91,14 @@ private var dbgEnabledFlag = false
             previewView.visibility = View.GONE
             blackScreen.visibility = View.VISIBLE
             setStatus("Status: Camera stopped")
+            lastAppliedResolutionLabel = currentResolutionLabel
             return
         }
 
-        if (!camRunningFlag) {
+        if (!camRunningFlag || resolutionChanged) {
+            stopCameraEngine()
             startCamera()
+            lastAppliedResolutionLabel = currentResolutionLabel
         }
 
         if (hidePreviewFlag) {
@@ -282,7 +288,7 @@ private var dbgEnabledFlag = false
 
             val analysis = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setTargetResolution(Size(640, 480))
+                .setTargetResolution(getTargetResolutionSize())
                 .build()
 
             analysis.setAnalyzer(cameraExecutor) { imageProxy ->
@@ -294,9 +300,12 @@ private var dbgEnabledFlag = false
 
                 try {
                     val now = System.currentTimeMillis()
-                    if (now - lastSentTs >= minIntervalMs) {
+                    val uploadIntervalMs = getUploadIntervalMs()
+
+                    if (now - lastSentTs >= uploadIntervalMs) {
                         lastSentTs = now
-                        val jpeg = ImageUtil.yuvToJpeg(imageProxy)
+                        val jpegQuality = getImageQualityValue()
+                        val jpeg = ImageUtil.yuvToJpeg(imageProxy, jpegQuality)
                         uploadFrame(jpeg)
                     }
                 } finally {
@@ -352,19 +361,6 @@ private var dbgEnabledFlag = false
     }
 
     private lateinit var overlayText: TextView
-    private var showDebug = false
-    private val uiHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val debugRunnable = object : Runnable {
-        override fun run() {
-            if (showDebug) {
-                overlayText.text = generateDebugText()
-                overlayText.visibility = android.view.View.VISIBLE
-                uiHandler.postDelayed(this, 500)
-            } else {
-                overlayText.visibility = android.view.View.GONE
-            }
-        }
-    }
 
     private fun setStatus(text: String) {
         runOnUiThread { statusText.text = text }
@@ -393,14 +389,62 @@ private var dbgEnabledFlag = false
         val url = baseUrl?.let { NetworkDiscover.baseUrlToInput(it) } ?: "Not connected"
         val hidePreviewFlag = prefs.getBoolean("hidePreview", false)
         val stopCameraFlag = prefs.getBoolean("stopCamera", false)
+
+        val qualityLabel = getImageQualityLabel()
+        val qualityValue = getImageQualityValue()
+
+        val uploadRateLabel = getUploadRateLabel()
+        val uploadIntervalMs = getUploadIntervalMs()
+
+        val resolutionText = getResolutionText()
+
         val mode = when {
             stopCameraFlag -> "Camera stopped"
             hidePreviewFlag -> "Preview hidden"
             else -> "Normal"
         }
 
-        return "Server: $url\nMode: $mode\nInterval: ${minIntervalMs}ms"
+        return "Server: $url\nMode: $mode\nResolution: $resolutionText\nUpload rate: $uploadRateLabel (${uploadIntervalMs}ms)\nQuality: $qualityLabel ($qualityValue)"
     }
 
+    private fun getImageQualityLabel(): String {
+        return prefs.getString("imageQualityLabel", "Medium") ?: "Medium"
+    }
 
+    private fun getImageQualityValue(): Int {
+        return when (getImageQualityLabel()) {
+            "Low" -> 35
+            "High" -> 75
+            else -> 55
+        }
+    }
+
+    private fun getUploadRateLabel(): String {
+        return prefs.getString("uploadRateLabel", "High") ?: "High"
+    }
+
+    private fun getUploadIntervalMs(): Long {
+        return when (getUploadRateLabel()) {
+            "Low" -> 500L
+            "Medium" -> 250L
+            else -> 120L
+        }
+    }
+
+    private fun getResolutionLabel(): String {
+        return prefs.getString("resolutionLabel", "Medium") ?: "Medium"
+    }
+
+    private fun getTargetResolutionSize(): Size {
+        return when (getResolutionLabel()) {
+            "Low" -> Size(320, 240)
+            "High" -> Size(1280, 960)
+            else -> Size(640, 480)
+        }
+    }
+
+    private fun getResolutionText(): String {
+        val size = getTargetResolutionSize()
+        return "${getResolutionLabel()} (${size.width}x${size.height})"
+    }
 }
