@@ -14,7 +14,7 @@
 
 ---
 
-## Community Recognition⭐
+**Community Recognition⭐**
 
 <p align="center">
 
@@ -24,7 +24,7 @@
 <td align="center" width="50%">
 
 <a href="https://github.com/ruanyf/weekly">
-  <img src="https://github.com/ruanyf.png" width="100"/>
+  <img src="https://github.com/ruanyf.png" width="115"/>
 </a>
 
 <br>
@@ -37,7 +37,7 @@
 <td align="center" width="50%">
 
 <a href="https://space.bilibili.com/67079745">
-  <img src="https://i0.hdslb.com/bfs/face/8a70069e1dc9ab89c1d688c2cefd3596864315ea.jpg" width="100"/>
+  <img src="https://i0.hdslb.com/bfs/face/8a70069e1dc9ab89c1d688c2cefd3596864315ea.jpg" width="115"/>
 </a>
 
 <br>
