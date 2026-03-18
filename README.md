@@ -278,7 +278,7 @@ This mechanism has the following characteristics:
 
 ## 2.2. System Parameter Customization [⌃](#top)
 
-Sentinel is not a fixed-behavior “black-box monitoring tool,” but a highly configurable real-time vision system.
+Sentinel is not a fixed-behavior “black-box monitoring tool”, but a highly configurable real-time vision system.
 Users can finely control video streaming, recording strategies, and AI behavior through the Dashboard to adapt to different hardware environments and application scenarios.
 
 <table> <tr> <td width="55%">
@@ -305,12 +305,13 @@ These parameters allow adjustments to “AI trigger sensitivity” and “model 
 
 </td> <td width="45%" align="center"> <img src="assets/dashboard_recording.png" width="100%"> <br> <b>Figure 3 - Dashboard Parameter Control Interface (Expanded View)</b> </td> </tr> </table>
 
-code line
+---
+
 <a id="sec23"></a>
 
 ### 2.3. AI Trigger-based Monitoring and Controllable Cognitive Output [⌃](#top)
 
-With the support of multimodal vision models, Sentinel is capable not only of “seeing the scene,” but also of performing structured understanding and risk assessment. The system adopts a layered mechanism of “motion trigger + model analysis”:
+With the support of multimodal vision models, Sentinel is capable not only of “seeing the scene”, but also of performing structured understanding and risk assessment. The system adopts a layered mechanism of “motion trigger + model analysis”:
 
 - Uses “traditional computer vision algorithms + large model inference” for layered processing, reducing token consumption and API costs;
 - When trigger conditions are met, the system calls the model and enters the OBSERVE state;
