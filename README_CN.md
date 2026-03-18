@@ -7,7 +7,6 @@
 [![Version](https://img.shields.io/badge/version-v1.1.0-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
-[![QQ Group](https://img.shields.io/badge/QQ群-1093221972-blue)](https://qm.qq.com/q/JFb68YIp0U)
 <br>
 [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
