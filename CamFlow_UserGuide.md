@@ -426,10 +426,11 @@ At this point, the CamFlow service and its data transmission to the PC server ar
 
 ### Possible Causes
 
-1. **Ingest** is not enabled on the PC Dashboard (receiving switch is OFF);
-2. Upload endpoint path or field name mismatch (e.g., server expects `image` but client sends differently);
-3. Upload succeeds but frames are rate-limited or dropped on server side (check logs);
-4. Browser cache or page not refreshed.
+1. The settings on the settings page have not been updated.
+2. **Ingest** is not enabled on the PC Dashboard (receiving switch is OFF);
+3. Upload endpoint path or field name mismatch (e.g., server expects `image` but client sends differently);
+4. Upload succeeds but frames are rate-limited or dropped on server side (check logs);
+5. Browser cache or page not refreshed.
 
 ### Troubleshooting Steps
 
@@ -439,6 +440,7 @@ At this point, the CamFlow service and its data transmission to the PC server ar
 
 ### Solutions
 
+- Click on the upper right corner to enter the settings page and update the settings once；
 - Ensure **Ingest** is enabled;
 - Align client/server API contract (path, field name, port);
 - Adjust sending interval, resolution, or JPEG quality to match network and PC performance.
