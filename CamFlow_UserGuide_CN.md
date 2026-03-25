@@ -3,7 +3,7 @@
 
 # CamFlow 使用说明
 
-[![Version](https://img.shields.io/badge/version-v1.0.0-black)](#)
+[![Version](https://img.shields.io/badge/version-v1.1.0-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide_CN.md)
 [![Role](https://img.shields.io/badge/role-Client-blue)](README_CN.md)
 [![Protocol](https://img.shields.io/badge/protocol-HTTP%20Upload-orange)](#sec42)
