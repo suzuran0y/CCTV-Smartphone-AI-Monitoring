@@ -9,7 +9,7 @@
 [![Protocol](https://img.shields.io/badge/protocol-HTTP%20Upload-orange)](#sec42)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](#sec54)
 
-🌐 **Language** --- [🇺🇸 English](CamFlow_UserGuide.md) | [🇨🇳 中文](CamFlow_UserGuide_CN.md)
+**Language** --- [🇺🇸 English](CamFlow_UserGuide.md) | [🇨🇳 中文](CamFlow_UserGuide_CN.md)
 
 > CamFlow is the Android-side "Image Capture & Transmission" module of the Sentinel system. Installing this application is a prerequisite for deploying and using Sentinel (PC server program + Web Dashboard). This guide is intended to help users understand the application's functionality, reproduce the deployment process, and troubleshoot common issues.
 
@@ -68,10 +68,10 @@ This separation reduces complexity on the mobile device and improves maintainabi
 
 CamFlow and the PC server together form the complete Sentinel system:
 
-- 📱 **Android Client** — Responsible for image capture and upload  
-- 🖥 **PC Server** — Responsible for video processing, recording, AI analysis, and visualization  
+- **Android Client** — Responsible for image capture and upload  
+- **PC Server** — Responsible for video processing, recording, AI analysis, and visualization  
 
-> 📘 For the complete system architecture and deployment instructions, please refer to: 👉 **[Sentinel Main System Guide](README.md)**
+> 📘 For the complete system architecture and deployment instructions, please refer to: **[Sentinel Main System Guide](README.md)**
 
 ---
 
@@ -79,7 +79,7 @@ CamFlow and the PC server together form the complete Sentinel system:
 <tr>
 <td width="33%">
 
-#### 🔧 Engineering Focus
+#### Engineering Focus
 
 - Distributed video data acquisition architecture  
 - LAN-based automatic server discovery  
@@ -90,7 +90,7 @@ CamFlow and the PC server together form the complete Sentinel system:
 
 <td width="33%">
 
-#### 🧠 Intelligent System Focus
+#### Intelligent System Focus
 
 - AI monitoring and backend analysis pipeline integration  
 - Layered trigger-based visual processing mechanism  
@@ -753,9 +753,9 @@ CamFlow
 The Sentinel system consists of the PC-side server program and the Android-side CamFlow application.  
 Current version information:
 
-- **CamFlow (Android) Version**: v1.0.0-beta  
+- **CamFlow (Android) Version**: v1.1.0  
 - **This Document Version**: v1.0.0  
-- **Last Updated**: 2026-02-23  
+- **Last Updated**: 2026-03-23
 
 ---
 
