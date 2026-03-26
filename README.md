@@ -1271,10 +1271,10 @@ If field names change, you must also update:
 The Sentinel system consists of **PC-side service program + Web Dashboard + Android CamFlow client**.  
 The current version information is as follows:
 
-- **Sentinel (PC + Dashboard) Version**: v1.0.0-beta
-- **CamFlow (Android) Version**: v1.0.0-beta
+- **Sentinel (PC + Dashboard) Version**: v1.0.0
+- **CamFlow (Android) Version**: v1.1.0
 - **Documentation Version**: v1.0.0
-- **Last Updated**: 2026-02-26
+- **Last Updated**: 2026-03-23
 
 ---
 
