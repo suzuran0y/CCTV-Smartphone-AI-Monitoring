@@ -1245,10 +1245,10 @@ Event duration: 153.9 s
 
 Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 组成，当前版本信息如下：
 
-- **Sentinel（PC + Dashboard）版本**：v1.0.0-beta
-- **CamFlow（Android）版本**：v1.0.0-beta
+- **Sentinel（PC + Dashboard）版本**：v1.0.0
+- **CamFlow（Android）版本**：v1.1.0
 - **本文档版本**：v1.0.0
-- **最后更新日期**：2026-02-26
+- **最后更新日期**：2026-03-23
 
 ---
 
