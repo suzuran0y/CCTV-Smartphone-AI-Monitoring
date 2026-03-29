@@ -38,8 +38,18 @@ It adopts a layered architecture of **“mobile capture + PC processing + browse
 
 This project can be used both as a lightweight local monitoring system and as an engineering prototype platform for visual data acquisition and intelligent analysis.
 
+<p align="center">
+  <img src="assets/ai_monitoring_record.png" alt="Sentinel system running demo" width="92%">
+</p>
+
+<p align="center">
+  <em>Figure 2 – System demonstration（Dashboard + AI Monitoring）</em>
+</p>
+
 > Before first use, it is strongly recommended to read the chapters in order. Click to jump:  
 > ① [Project Overview](#sec1) → ② [Project Deployment](#sec3) → ③ [Run the Project](#sec4) → ④ [Dashboard Guide](#sec43)
+
+---
 
 ## Table of Contents
 
@@ -197,7 +207,7 @@ Sentinel is not only a real-time monitoring tool, but also an extensible platfor
 Its LAN-based localized operation gives it practical value in the following scenarios:
 
 <table> <tr> <td width="50%">
-🏠 Local Privacy-Oriented Monitoring Solution
+Local Privacy-Oriented Monitoring Solution
 
 - All data is fully stored on the local LAN PC
 
@@ -207,7 +217,7 @@ Its LAN-based localized operation gives it practical value in the following scen
 
 - Suitable for private environments such as homes, laboratories, and studios
 
-🧠 AI Behavior Analysis Experimental Platform
+AI Behavior Analysis Experimental Platform
 
 - Supports integration of multimodal vision models
 
@@ -218,7 +228,7 @@ Its LAN-based localized operation gives it practical value in the following scen
 - Suitable for behavior recognition and risk analysis research
 
 </td> <td width="50%">
-📊 Data Acquisition & Analysis Prototype System
+Data Acquisition & Analysis Prototype System
 
 - Automatically generates structured JSON event records
 
@@ -228,7 +238,7 @@ Its LAN-based localized operation gives it practical value in the following scen
 
 - Can serve as a small-scale visual data collection prototype
 
-🧩 Distributed Vision System Architecture Example
+Distributed Vision System Architecture Example
 
 - Android-side acquisition + PC-side processing
 
@@ -269,7 +279,7 @@ This mechanism has the following characteristics:
 
 - **Fully localized storage and data control** — unlike traditional monitoring solutions that rely on SD cards or cloud storage, Sentinel saves video data directly on the LAN PC. Local disk storage avoids cloud service fees and third-party data risks, and also facilitates subsequent data analysis, model training, or secondary processing.
 
-</td> <td width="45%" align="center"> <img src="assets/dashboard_ingest_on.png" width="100%"> <br> <b>Figure 2 - Dashboard Live Preview Interface (Full-screen Mode)</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets/dashboard_ingest_on.png" width="100%"> <br> <b>Figure 3 - Dashboard Live Preview Interface (Full-screen Mode)</b> </td> </tr> </table>
 
 ---
 
@@ -302,7 +312,7 @@ Configures segmented writing and video encoding to avoid oversized single files 
 
 These parameters allow adjustments to “AI trigger sensitivity” and “model decision logic” via the Settings page, optimizing token usage and enabling personalized monitoring scenarios.
 
-</td> <td width="45%" align="center"> <img src="assets/dashboard_recording.png" width="100%"> <br> <b>Figure 3 - Dashboard Parameter Control Interface (Expanded View)</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets/dashboard_recording.png" width="100%"> <br> <b>Figure 4 - Dashboard Parameter Control Interface (Expanded View)</b> </td> </tr> </table>
 
 ---
 
@@ -347,7 +357,7 @@ Prompt Template (role definition), Scene Profile (long-term scene context), Sess
 
 to make model behavior programmable and controllable.
 
-</td> <td width="45%" align="center"> <img src="assets\ai_monitoring_record.png" width="100%"> <br> <b>Figure 4 - AI Enabled Status</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets\ai_monitoring_record.png" width="100%"> <br> <b>Figure 5 - AI Enabled Status</b> </td> </tr> </table>
 
 ---
 
@@ -399,7 +409,7 @@ enabling the construction of a real-time vision system without additional hardwa
 <img src="assets/app_failed_hint.jpg" width="32%">
 
 <br>
-<b>Figure 5 - CamFlow Application Interface</b>
+<b>Figure 6 - CamFlow Application Interface</b>
 
 </td>
 </tr>
