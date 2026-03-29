@@ -419,7 +419,7 @@ enabling the construction of a real-time vision system without additional hardwa
 
 ---
 
-### 🤝 Contributing
+### Contributing 🤝
 
 This project is still evolving, and contributions and issues are **highly welcome**!
 
@@ -438,7 +438,7 @@ Please complete the basic project deployment in the following order:
 - Install the Android client APK
 
 
-### 📂 Project Structure
+### Project Structure 📂
 
 ```
 Sentinel/
@@ -1349,7 +1349,7 @@ Copyright © 2026 Suzuran0y
 
 <a id="CR"></a>
 
-**Community Recognition⭐**
+**Community Recognition ⭐**
 
 <p align="center">
 
