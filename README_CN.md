@@ -12,7 +12,7 @@
 
 本项目已被 [科技爱好者周刊](#CR) 和 [科技补全](#CR) 收录。感谢他们的认可与支持。
 
-🚀 最新更新（持续迭代中）：[v1.1.0 — 2026-03-18](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 最新更新（持续迭代中）：[v1.1.0 — 2026-03-18](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2) Note: 最近学业繁忙，6月继续更新。
 
 ---
 
