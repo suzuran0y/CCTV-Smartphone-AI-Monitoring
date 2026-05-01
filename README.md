@@ -19,7 +19,7 @@ This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech R
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
 <p align="center">
-  <img src="assets/readme_banner.png" width="92%">
+  <img src="assets/readme_banner_2.png" width="92%">
 </p>
 
 <p align="center">
