@@ -19,7 +19,7 @@
 Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框架。
 
 <p align="center">
-  <img src="assets/readme_banner.png" alt="Sentinel Real-Time Monitoring System banner" width="92%">
+  <img src="assets/readme_banner_2.png" alt="Sentinel Real-Time Monitoring System banner" width="92%">
 </p>
 
 <p align="center">
