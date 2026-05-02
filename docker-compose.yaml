@@ -1,0 +1,12 @@
+services:
+  cctv_smartphone_ai_monitoring:
+    image: coconutwater1/cctv_smartphone_ai_monitoring:v1.0 
+    container_name: cctv_smartphone_ai_monitoring
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./recordings:/app/recordings
+      - ./app/config/config.json:/app/app/config/config.json
+    ports:
+      - "8888:8000"
