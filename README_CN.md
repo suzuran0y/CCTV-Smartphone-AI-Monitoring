@@ -1181,7 +1181,7 @@ Event duration: 153.9 s
 
 <a id="sec46"></a>
 
-### 4.6. 第三方模型调用（可替换） [⌃](#top)
+### 4.6. 第三方模型调用 [⌃](#top)
 
 Sentinel 的 AI 模块为可切换的视觉模型 Provider 架构。可以通过配置切换到 OpenAI、Gemini、DashScope、SiliconFlow，或其他提供 OpenAI-compatible 接口的第三方 / 本地视觉模型服务。
 
