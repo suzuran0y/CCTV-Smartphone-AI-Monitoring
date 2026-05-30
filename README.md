@@ -1189,7 +1189,7 @@ After an event ends, it is written into `log/ai_events.jsonl` and displayed in c
 
 <a id="sec46"></a>
 
-### 4.6. Third-party Model Integration (Replaceable) [⌃](#top)
+### 4.6. Third-party Model Integration [⌃](#top)
 
 Sentinel's AI module now uses a switchable visual model Provider architecture. You can switch to OpenAI, Gemini, DashScope, SiliconFlow, or other third-party / local visual model services that expose an OpenAI-compatible API through configuration.
 
