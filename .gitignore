@@ -28,6 +28,9 @@ recordings/*
 # Local configuration files
 app/config/config.json
 
+# Local Codex modification log
+CODEX_MODIFICATION_LOG.md
+
 # System files
 .DS_Store
 Thumbs.db

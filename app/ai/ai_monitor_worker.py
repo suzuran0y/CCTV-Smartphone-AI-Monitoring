@@ -5,7 +5,7 @@ from typing import Optional
 
 from .ai_store import AiRuntime, EventStore
 from .motion_trigger import MotionTrigger
-from .ai_ark import ArkVisionClient, resolve_api_key
+from .vision_client import client_signature, create_vision_client, resolve_provider_settings
 
 
 def _now_text() -> str:
@@ -45,11 +45,10 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
       - Use has_person to confirm dwell >= threshold and to decide event end.
     """
     motion = MotionTrigger()
-    client: Optional[ArkVisionClient] = None
+    client = None
 
     # Cache to avoid recreating client on every loop.
-    last_model = None
-    last_key = None
+    last_client_sig: Optional[str] = None
 
     while not stop_event.is_set():
         cfg = cfg_store.get_copy()
@@ -70,24 +69,33 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
         motion.ratio_threshold = _clamp_float(cfg.get("motion_ratio_threshold", 0.02), 0.001, 0.5, 0.02)
         motion.min_trigger_interval_sec = _clamp_float(cfg.get("motion_min_interval", 1.0), 0.1, 10.0, 1.0)
 
-        ark_model = str(cfg.get("ark_model", "")).strip()
-        api_key = resolve_api_key(cfg).strip()
-
-        if not ark_model or not api_key:
+        settings = resolve_provider_settings(cfg)
+        if not settings["model"] or not settings["api_key"]:
+            missing = []
+            if not settings["model"]:
+                missing.append("model")
+            if not settings["api_key"]:
+                missing.append("api_key")
+            with ai_rt.lock:
+                ai_rt.last_ai_error = f"AI config missing: {', '.join(missing)}"
             time.sleep(0.2)
             continue
 
         # Initialize / rebuild client if config changed
-        if client is None or ark_model != last_model or api_key != last_key:
+        sig = client_signature(cfg)
+        if client is None or sig != last_client_sig:
             try:
-                client = ArkVisionClient(api_key=api_key, model=ark_model)
-                last_model = ark_model
-                last_key = api_key
-                logger.info("ArkVisionClient ready")
+                client = create_vision_client(cfg)
+                last_client_sig = sig
+                with ai_rt.lock:
+                    ai_rt.last_ai_error = ""
+                logger.info(
+                    f"Vision client ready: provider={settings['provider']} model={settings['model']}"
+                )
             except Exception as e:
                 with ai_rt.lock:
-                    ai_rt.last_ai_error = f"Ark init failed: {e}"
-                logger.error(f"Ark init failed: {e}")
+                    ai_rt.last_ai_error = f"Vision client init failed: {e}"
+                logger.error(f"Vision client init failed: {e}")
                 client = None
                 time.sleep(1.0)
                 continue

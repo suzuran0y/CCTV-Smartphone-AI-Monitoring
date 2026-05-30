@@ -33,6 +33,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "ai_mode": "triggered",
 
     # Ark / Volcengine
+    "ai_provider": "ark",
+    "ai_model": "",
+    "ai_base_url": "",
+    "ai_api_key": "",
+    "ai_request_timeout_sec": 30,
     "ark_model": "doubao-seed-2-0-mini-260215",
     "ark_api_key": API_KEY,  # can also be supplied via env var ARK_API_KEY
 
@@ -132,6 +137,11 @@ def validate_and_normalize(patch: dict) -> Tuple[bool, dict, str]:
         # AI switches
         _bool("ai_enabled")
         _str("ai_mode", 30)
+        _str("ai_provider", 50)
+        _str("ai_model", 200)
+        _str("ai_base_url", 300)
+        _str("ai_api_key", 300)
+        _int("ai_request_timeout_sec", 5, 120)
 
         # Ark config
         _str("ark_model", 200)

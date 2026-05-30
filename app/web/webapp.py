@@ -9,6 +9,7 @@ import numpy as np
 from flask import Flask, request, Response, jsonify, render_template
 
 from app.config.config_store import validate_and_normalize
+from app.ai.vision_client import safe_provider_info
 from app.recorder.recorder_worker import stop_recorder
 
 def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, stop_event, threads, server_log_path: str) -> Flask:
@@ -102,6 +103,10 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             cfg["ark_api_key"] = "******"
         else:
             cfg["ark_api_key"] = ""
+        if cfg.get("ai_api_key"):
+            cfg["ai_api_key"] = "******"
+        else:
+            cfg["ai_api_key"] = ""
         return jsonify(cfg)
 
     @app.put("/api/config")
@@ -113,6 +118,10 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             v = patch.get("ark_api_key")
             if v is None or str(v).strip() in ("", "******"):
                 patch.pop("ark_api_key", None)
+        if "ai_api_key" in patch:
+            v = patch.get("ai_api_key")
+            if v is None or str(v).strip() in ("", "******"):
+                patch.pop("ai_api_key", None)
 
         ok, cleaned, err = validate_and_normalize(patch)
         if not ok:
@@ -318,6 +327,7 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         # Return AI thread runtime state (SLEEP/OBSERVE, event id, dwell seconds, last model output, etc.)
         try:
             snap = ai_rt.snapshot()
+            snap["model_info"] = safe_provider_info(cfg_store.get_copy())
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)}), 500
         return jsonify({"ok": True, "data": snap})
