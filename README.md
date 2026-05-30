@@ -12,7 +12,7 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
-🚀 Latest Update (ongoing): [v1.1.0 — 2026-03-18](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 Latest Update (ongoing): [v1.1.1 — 2026-05-30](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 ---
 
