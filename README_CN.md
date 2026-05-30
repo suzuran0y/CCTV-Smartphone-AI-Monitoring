@@ -1183,68 +1183,366 @@ Event duration: 153.9 s
 
 ### 4.6. 第三方模型调用（可替换） [⌃](#top)
 
-当前系统的 AI 模块围绕 火山引擎 平台提供的视觉模型 API 构建，如需使用系统的 AI 功能，请先至平台获得 **模型权限** 与 **API KEY**，填入设置配置中才能正常启用。
+Sentinel 的 AI 模块为可切换的视觉模型 Provider 架构。可以通过配置切换到 OpenAI、Gemini、DashScope、SiliconFlow，或其他提供 OpenAI-compatible 接口的第三方 / 本地视觉模型服务。
 
-> 其他平台模型的接入会在后续的更新中进行兼容，当下版本如需接入其他平台或本地部署视觉模型，请修改 `ai_ark.py` 中的 `analyze_frame()` 函数，并确保输出结构符合字段合同。
-
----
-
-#### 4.6.1. 账号注册与登录
-
-1. 访问平台登录页面 https://console.volcengine.com/ ，若页面语言非使用者语言，请点击右上角 `中文 / EN` 按钮进行切换；
-2. 按页面指引完成注册后登录控制台；
-3. 在控制台进入 `火山方舟` 页面；
-4. 进入`开通管理`页面，在「大语言模型」分类下找到视觉模型，推荐选择 `Doubao-Seed-2.0-mini` 模型，点击对应「开通」按钮；
-
-- 提醒：在`开通管理`页面中也同时开启「安心体验」服务，模型提供免费额度（50万 tokens），开通后只消耗免费额度，额度耗尽后将自动转关闭接口权限。
-
-5. 进入控制台的 `API Key 管理` 页面；
-6. 点击「新建 API Key」，按需求配置；
-7. 配置完成后点击「确认创建」，复制生成的 API Key 并妥善保存。
-
-> 考虑到 平台的 UI 、免费额度等参照可能随时间而变化，上述步骤仅作参考，但核心环节不变：
-
-1. 注册并登录平台控制台；
-2. 开通支持视觉能力的模型；
-3. 创建 API Key；
-4. 将 Model ID 与 API Key 填入 Dashboard。
+> 模型切换通过 `app/config/config.json`、环境变量或代码默认配置完成。Dashboard 已支持显示当前生效模型信息。
 
 ---
 
-#### 4.6.2. 模型信息
+#### 4.6.1. 模块结构
 
-根据开发测试，现阶段使用 `Doubao-Seed-2.0-mini` 的性价比相对最高。
+本次模型替换能力由以下文件协同实现：
 
-- Doubao-Seed-2.0-mini：
-  - 面向低时延、高并发场景的轻量级模型；
-  - 支持 256k 上下文长度；
-  - 4 档思考深度调节（minimal/low/medium/high）；
-  - 支持图文多模态理解、函数调用能力，适合成本速度优先的轻量级任务；
-  - 非思考模式下 tokens 消耗量仅为思考模式的 1/10，简单场景性价比极高。
+| 文件 | 作用 |
+|------|------|
+| `app/ai/vision_client.py` | 统一视觉模型客户端入口，负责 Provider 解析、客户端创建与 OpenAI-compatible 请求 |
+| `app/ai/ai_ark.py` | 原 Ark 视觉模型客户端，继续保留 |
+| `app/ai/ai_monitor_worker.py` | AI 监控线程，通过 `create_vision_client()` 创建当前模型客户端 |
+| `app/config/config_store.py` | 新增通用模型配置字段与校验逻辑 |
+| `app/web/webapp.py` | `/api/ai/status` 返回脱敏后的 `model_info` |
+| `app/web/templates/dashboard.html` | AI Status 区域新增 Model Info 显示块 |
+| `app/web/static/dashboard.js` | 前端渲染当前模型信息 |
 
-> 在将模型 ID —— doubao-seed-2-0-mini-260215 与 自己的 API Key 填写进 Dashboard 后并应用设置，AI 模块正式可以工作。
+AI 模型调用链路如下：
 
----
+```text
+配置来源（Dashboard / config.json / env）→ ConfigStore → resolve_provider_settings() → create_vision_client()
+                                                          ├─ ArkVisionClient
+                                                          └─ OpenAICompatibleVisionClient
+视觉帧 FrameBuffer → analyze_frame(frame) → JSON result → AI EventStore / Dashboard
+```
 
-#### 4.6.3. 替换视觉模型
-
-若希望使用其他模型（例如 OpenAI Vision 或本地多模态模型），请修改以下文件：
-
-- `ai_ark.py`
-  - 修改 `analyze_frame()` 函数
-  - 替换 API 调用逻辑
-  - 保持输出 JSON 字段结构一致
-
-- `config_store.py`（可选）
-  - 添加新的模型参数
-  - 设置默认值
-
-而 Dashboard 与 AI Status 区域也依赖该字段合同进行渲染。若字段名改变，则必须同步修改：`ai_monitor_worker.py`，`dashboard.js` 中对字段的描述。
-
-> ⚠️ 重要：无论更换何种模型，必须保证输出结构符合设定的字段合同。否则 Dashboard 无法正确对模型结果进行解析。
+AI worker 只依赖统一的 `analyze_frame()` 方法，因此后续继续增加新平台时，不需要大幅修改状态机逻辑。
 
 ---
 
+#### 4.6.2. 当前支持的 Provider
+
+当前内置 Provider 包括：
+
+| Provider | 类型 | 默认 Base URL | 说明 |
+|----------|------|---------------|------|
+| `ark` | Ark 原生客户端 | `https://ark.cn-beijing.volces.com/api/v3` | 保留原有火山方舟调用方式 |
+| `openai` | OpenAI-compatible | `https://api.openai.com/v1` | 用于 OpenAI Chat Completions 视觉模型 |
+| `gemini` | OpenAI-compatible | `https://generativelanguage.googleapis.com/v1beta/openai` | 用于 Gemini OpenAI 兼容接口 |
+| `dashscope` | OpenAI-compatible | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 用于阿里云百炼 / 通义千问兼容接口 |
+| `siliconflow` | OpenAI-compatible | `https://api.siliconflow.cn/v1` | 用于 SiliconFlow 兼容接口 |
+| `openai_compatible` | OpenAI-compatible | 无默认值 | 用于自定义兼容接口或本地模型网关 |
+
+> 注意：不同平台是否支持图像输入，取决于所选模型本身。请确保 `ai_model` 指向的是具备视觉理解能力的模型。
+
+---
+
+#### 4.6.3. 配置字段说明
+
+本次新增以下通用字段：
+
+| 字段名 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `ai_provider` | 字符串 | `ark` | 当前使用的模型平台 |
+| `ai_model` | 字符串 | 空 | 通用模型 ID。若 Provider 为 Ark 且该字段为空，会回退使用 `ark_model` |
+| `ai_base_url` | 字符串 | 空 | 自定义模型服务地址。部分内置 Provider 有默认 Base URL |
+| `ai_api_key` | 字符串 | 空 | 通用模型 API Key。若为空，会尝试读取环境变量 |
+| `ai_request_timeout_sec` | 整数 | `30` | 模型请求超时时间，允许范围为 5 到 120 秒 |
+
+为兼容旧版本配置，以下 Ark 字段仍然可用：
+
+| 字段名 | 说明 |
+|--------|------|
+| `ark_model` | Ark / 火山方舟模型 ID |
+| `ark_api_key` | Ark / 火山方舟 API Key |
+
+当 `ai_provider = "ark"` 时，模型选择优先级为：
+
+```text
+AI_MODEL 环境变量
+  > ai_model
+  > ark_model
+```
+
+API Key 选择优先级为：
+
+```text
+AI_API_KEY 环境变量
+  > ai_api_key
+  > ARK_API_KEY 环境变量
+  > ark_api_key
+```
+
+---
+
+#### 4.6.4. 环境变量说明
+
+系统支持通过环境变量临时覆盖配置文件，适合本地测试或部署环境使用。
+
+通用环境变量：
+
+| 环境变量 | 说明 |
+|----------|------|
+| `AI_PROVIDER` | 覆盖 `ai_provider` |
+| `AI_MODEL` | 覆盖 `ai_model` |
+| `AI_BASE_URL` | 覆盖 `ai_base_url` |
+| `AI_API_KEY` | 覆盖 `ai_api_key` |
+
+Provider 专用环境变量：
+
+| Provider | 支持的环境变量 |
+|----------|----------------|
+| `ark` | `ARK_API_KEY` |
+| `openai` | `OPENAI_API_KEY` |
+| `gemini` | `GEMINI_API_KEY` / `GOOGLE_API_KEY` |
+| `dashscope` | `DASHSCOPE_API_KEY` / `QWEN_API_KEY` |
+| `siliconflow` | `SILICONFLOW_API_KEY` |
+
+---
+
+#### 4.6.5. 使用默认 Ark / 火山方舟模型
+
+如果希望继续使用原有火山方舟模型，可保持默认 Provider：
+
+```json
+{
+  "ai_provider": "ark",
+  "ark_model": "doubao-seed-2-0-mini-260215",
+  "ark_api_key": "YOUR_ARK_API_KEY"
+}
+```
+
+也可以使用环境变量：
+
+```powershell
+$env:AI_PROVIDER = "ark"
+$env:ARK_API_KEY = "YOUR_ARK_API_KEY"
+```
+
+适用场景：
+
+- 希望继续使用原有火山方舟模型；
+- 不希望改动原有 Dashboard 使用习惯；
+- 需要保持旧配置兼容。
+
+---
+
+#### 4.6.6. 使用 OpenAI 视觉模型
+
+配置示例：
+
+```json
+{
+  "ai_provider": "openai",
+  "ai_model": "gpt-4o-mini",
+  "ai_api_key": "YOUR_OPENAI_API_KEY"
+}
+```
+
+环境变量示例：
+
+```powershell
+$env:AI_PROVIDER = "openai"
+$env:AI_MODEL = "gpt-4o-mini"
+$env:OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
+```
+
+系统会自动使用：
+
+```text
+https://api.openai.com/v1/chat/completions
+```
+
+---
+
+#### 4.6.7. 使用 Gemini OpenAI-compatible 接口
+
+配置示例：
+
+```json
+{
+  "ai_provider": "gemini",
+  "ai_model": "gemini-2.5-flash",
+  "ai_api_key": "YOUR_GEMINI_API_KEY"
+}
+```
+
+环境变量示例：
+
+```powershell
+$env:AI_PROVIDER = "gemini"
+$env:AI_MODEL = "gemini-2.5-flash"
+$env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
+```
+
+系统会自动使用：
+
+```text
+https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+```
+
+---
+
+#### 4.6.8. 使用 DashScope / 通义千问兼容接口
+
+配置示例：
+
+```json
+{
+  "ai_provider": "dashscope",
+  "ai_model": "qwen-vl-plus",
+  "ai_api_key": "YOUR_DASHSCOPE_API_KEY"
+}
+```
+
+环境变量示例：
+
+```powershell
+$env:AI_PROVIDER = "dashscope"
+$env:AI_MODEL = "qwen-vl-plus"
+$env:DASHSCOPE_API_KEY = "YOUR_DASHSCOPE_API_KEY"
+```
+
+系统会自动使用：
+
+```text
+https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+```
+
+---
+
+#### 4.6.9. 使用自定义 OpenAI-compatible 服务
+
+若使用第三方中转服务、本地模型网关或自建兼容服务，可使用：
+
+```json
+{
+  "ai_provider": "openai_compatible",
+  "ai_model": "your-vision-model",
+  "ai_base_url": "http://127.0.0.1:9000/v1",
+  "ai_api_key": "YOUR_API_KEY"
+}
+```
+
+系统最终请求地址会自动拼接为：
+
+```text
+http://127.0.0.1:9000/v1/chat/completions
+```
+
+如果 `ai_base_url` 已经写到完整接口：
+
+```json
+{
+  "ai_base_url": "http://127.0.0.1:9000/v1/chat/completions"
+}
+```
+
+系统会直接使用该地址，不会重复拼接。
+
+---
+
+#### 4.6.10. Dashboard 当前模型信息
+
+Dashboard 的 AI Status 区域新增了 `Model Info` 显示块，用于展示当前后端实际生效的模型配置。
+
+显示内容示例：
+
+```text
+Provider: openai
+Client:   openai_compatible
+Model:    gpt-4o-mini
+Base URL: https://api.openai.com/v1
+API Key:  configured
+Timeout:  30s
+```
+
+字段说明：
+
+| 显示项 | 说明 |
+|--------|------|
+| `Provider` | 当前选择的模型平台 |
+| `Client` | 后端实际使用的客户端类型 |
+| `Model` | 当前模型 ID |
+| `Base URL` | 当前请求的基础地址 |
+| `API Key` | 只显示是否已配置，不显示真实 Key |
+| `Timeout` | 请求超时时间 |
+
+若 API Key 缺失，Dashboard 会显示：
+
+```text
+API Key: missing
+```
+
+此时 AI 模型调用不会正常进行，但基础的视频上传、预览、录制等功能不受影响。
+
+---
+
+#### 4.6.11. 模型输出格式要求
+
+无论使用哪一个模型平台，模型返回内容都必须能解析为一个 JSON 对象。
+
+当前系统要求模型输出以下字段：
+
+```json
+{
+  "has_person": true,
+  "person_count": 1,
+  "activity": "standing",
+  "risk_level": "info",
+  "summary": "A person is standing in the monitored area.",
+  "confidence": 0.87
+}
+```
+
+字段说明：
+
+| 字段名 | 类型 | 说明 |
+|--------|------|------|
+| `has_person` | boolean | 画面中是否有人 |
+| `person_count` | number 或 null | 人数 |
+| `activity` | string | 活动状态，如 `passing` / `standing` / `lingering` / `unknown` |
+| `risk_level` | string | 风险等级，建议为 `info` / `warn` / `critical` |
+| `summary` | string | 简短描述 |
+| `confidence` | number | 置信度，范围 0 到 1 |
+
+如果模型返回结果中缺少部分字段，系统会尝试补默认值；但为了获得稳定结果，建议在 Prompt 中明确要求模型：
+
+```text
+Only output one JSON object. Do not output markdown or extra explanations.
+```
+
+---
+
+#### 4.6.12. 验证与测试
+
+本模块已添加自动化测试，主要覆盖：
+
+- Provider 配置解析；
+- Ark 旧字段兼容；
+- Base URL 到 `/chat/completions` 的拼接逻辑；
+- OpenAI-compatible 响应解析；
+- API Key 脱敏模型信息输出；
+- Dashboard 是否包含 Model Info 容器；
+- 使用本地假 OpenAI-compatible 服务完整验证请求链路。
+
+运行测试：
+
+```powershell
+python -m pytest -q
+```
+
+当前验证结果：
+
+```text
+12 passed
+```
+
+其中，本地假模型服务测试会验证：
+
+- 请求地址是否为 `/v1/chat/completions`；
+- 是否携带 `Authorization: Bearer ...`；
+- 请求体中的 `model` 是否正确；
+- 图像是否以 `data:image/jpeg;base64,...` 形式传递；
+- 模型 JSON 输出是否能被系统解析并归一化。
+
+---
 <a id="sec5"></a>
 
 ## 5. 版本信息与项目说明 [⌃](#top)

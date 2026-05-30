@@ -171,6 +171,7 @@ async function refreshAI() {
   const elLastSummary = document.getElementById("aiLastSummary");
   const elTimes = document.getElementById("aiTimes");
   const elMetrics = document.getElementById("aiMetrics");
+  const elModelInfo = document.getElementById("aiModelInfo");
 
   if (!(r.json && r.json.ok)) {
     const errObj = r.json || {error: r.status};
@@ -182,6 +183,7 @@ async function refreshAI() {
 
   const data = r.json.data || {};
   if (rawPre) rawPre.textContent = JSON.stringify(data, null, 2);
+  if (elModelInfo) elModelInfo.textContent = _formatModelInfo(data.model_info || {});
 
   const state = String(data.state || "?");
   const eventId = data.event_id || "—";
@@ -244,6 +246,23 @@ async function refreshAI() {
     elMetrics.textContent =
       `Person present (acc): ${accTxt}\nEvent duration:      ${durTxt}`;
   }
+}
+
+function _formatModelInfo(info) {
+  const provider = info.provider || "N/A";
+  const kind = info.kind || "N/A";
+  const model = info.model || "N/A";
+  const baseUrl = info.base_url || "N/A";
+  const timeout = info.timeout_sec ?? "N/A";
+  const keyState = info.api_key_set ? "configured" : "missing";
+  return [
+    `Provider: ${provider}`,
+    `Client:   ${kind}`,
+    `Model:    ${model}`,
+    `Base URL: ${baseUrl}`,
+    `API Key:  ${keyState}`,
+    `Timeout:  ${timeout}s`
+  ].join("\n");
 }
 
 

@@ -1191,85 +1191,366 @@ After an event ends, it is written into `log/ai_events.jsonl` and displayed in c
 
 ### 4.6. Third-party Model Integration (Replaceable) [⌃](#top)
 
-The current AI module is built around the vision model API provided by the Volcengine platform.  
-To use the AI functionality, you must first obtain **model access permission** and an **API Key**, then enter them into the Dashboard settings.
+Sentinel's AI module now uses a switchable visual model Provider architecture. You can switch to OpenAI, Gemini, DashScope, SiliconFlow, or other third-party / local visual model services that expose an OpenAI-compatible API through configuration.
 
-> Support for additional platforms will be added in future updates.  
-> If you wish to integrate other platforms or locally deployed vision models in the current version, modify the `analyze_frame()` function in `ai_ark.py`, and ensure the output structure complies with the Output Contract.
+> Model switching is configured through `app/config/config.json`, environment variables, or code defaults. The Dashboard already displays the currently effective model information.
 
 ---
 
-#### 4.6.1. Account Registration and Login
+#### 4.6.1. Module Structure
 
-1. Visit the platform login page: https://console.volcengine.com/  
-   If the page language is not preferred, switch via the `中文 / EN` button in the upper-right corner;
+The model replacement capability is implemented by the following files:
 
-2. Complete registration and log in to the console;
+| File | Purpose |
+|------|---------|
+| `app/ai/vision_client.py` | Unified visual model client entry point. Handles Provider resolution, client creation, and OpenAI-compatible requests. |
+| `app/ai/ai_ark.py` | Existing Ark visual model client, kept for backward compatibility. |
+| `app/ai/ai_monitor_worker.py` | AI monitoring worker. Creates the current model client through `create_vision_client()`. |
+| `app/config/config_store.py` | Adds and validates general model configuration fields. |
+| `app/web/webapp.py` | Adds sanitized `model_info` to `/api/ai/status`. |
+| `app/web/templates/dashboard.html` | Adds the Model Info block to the AI Status area. |
+| `app/web/static/dashboard.js` | Renders the current model information in the frontend. |
 
-3. Enter the `Ark` page;
+The AI model call chain is:
 
-4. Go to `Config - Model activation`, and under the “Large Language Model” category, locate the vision model.  
-   It is recommended to select `Doubao-Seed-2.0-mini`, then click the corresponding “Activate” button;
+```text
+Config source (Dashboard / config.json / env) -> ConfigStore -> resolve_provider_settings() -> create_vision_client()
+                                                              |- ArkVisionClient
+                                                              `- OpenAICompatibleVisionClient
+Visual frame FrameBuffer -> analyze_frame(frame) -> JSON result -> AI EventStore / Dashboard
+```
 
-- Reminder: Also enable the “**Free Credits Only Mode**” service on the Model activation page.  
-  The model provides a free quota (500,000 tokens). After activation, only the free quota is consumed.  
-  Once exhausted, API access will automatically be disabled.
-
-5. Go to the `Config - API keys` page in the console;
-
-6. Click “**Create API Key**” and configure as needed;
-
-7. After creation, copy and securely store the generated API Key.
-
-> As the platform UI and free quota policies may change over time, the steps above are for reference.  
-> However, the core process remains:
-
-1. Register and log in to the platform console;  
-2. Activate a vision-capable model;  
-3. Create an API Key;  
-4. Enter the Model ID and API Key into the Dashboard.
+The AI worker only depends on the unified `analyze_frame()` method, so adding more providers later does not require major changes to the state machine.
 
 ---
 
-#### 4.6.2. Model Information
+#### 4.6.2. Supported Providers
 
-Based on development testing, `Doubao-Seed-2.0-mini` currently provides the best cost-performance balance.
+Built-in Providers currently include:
 
-- Doubao-Seed-2.0-mini:
-  - Lightweight model designed for low-latency and high-concurrency scenarios;
-  - Supports up to 256k context length;
-  - Four reasoning depth levels (minimal / low / medium / high);
-  - Supports multimodal image-text understanding and function calling;
-  - In non-reasoning mode, token consumption is only 1/10 of reasoning mode, offering excellent cost efficiency for simple scenarios.
+| Provider | Type | Default Base URL | Description |
+|----------|------|------------------|-------------|
+| `ark` | Native Ark client | `https://ark.cn-beijing.volces.com/api/v3` | Keeps the existing Volcengine Ark integration. |
+| `openai` | OpenAI-compatible | `https://api.openai.com/v1` | For OpenAI Chat Completions vision models. |
+| `gemini` | OpenAI-compatible | `https://generativelanguage.googleapis.com/v1beta/openai` | For Gemini's OpenAI-compatible interface. |
+| `dashscope` | OpenAI-compatible | `https://dashscope.aliyuncs.com/compatible-mode/v1` | For Alibaba Cloud Model Studio / Qwen compatible mode. |
+| `siliconflow` | OpenAI-compatible | `https://api.siliconflow.cn/v1` | For SiliconFlow compatible mode. |
+| `openai_compatible` | OpenAI-compatible | None | For custom compatible APIs or local model gateways. |
 
-> After entering the model ID `doubao-seed-2-0-mini-260215` and your API Key into the Dashboard and applying the settings, the AI module will function properly.
-
----
-
-#### 4.6.3. Replacing the Vision Model
-
-If you wish to use other models (e.g., OpenAI Vision or a locally deployed multimodal model), modify the following files:
-
-- `ai_ark.py`
-  - Modify the `analyze_frame()` function
-  - Replace the API call logic
-  - Ensure JSON output structure remains consistent
-
-- `config_store.py` (optional)
-  - Add new model parameters
-  - Set default values
-
-The Dashboard and AI Status panels rely on the Output Contract for rendering.  
-If field names change, you must also update:
-
-- `ai_monitor_worker.py`
-- `dashboard.js`
-
-> ⚠️ Important: Regardless of the model used, the output structure must conform to the predefined Output Contract.  
-> Otherwise, the Dashboard will not be able to correctly parse the results.
+> Whether image input is supported depends on the selected model itself. Make sure `ai_model` points to a vision-capable model.
 
 ---
 
+#### 4.6.3. Configuration Fields
+
+The following general fields were added:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `ai_provider` | string | `ark` | Current model provider. |
+| `ai_model` | string | empty | General model ID. If Provider is Ark and this field is empty, the system falls back to `ark_model`. |
+| `ai_base_url` | string | empty | Custom model service base URL. Some built-in Providers have default Base URLs. |
+| `ai_api_key` | string | empty | General model API Key. If empty, the system tries environment variables. |
+| `ai_request_timeout_sec` | integer | `30` | Model request timeout, allowed range 5 to 120 seconds. |
+
+For backward compatibility, these Ark fields are still supported:
+
+| Field | Description |
+|-------|-------------|
+| `ark_model` | Ark / Volcengine model ID. |
+| `ark_api_key` | Ark / Volcengine API Key. |
+
+When `ai_provider = "ark"`, model selection priority is:
+
+```text
+AI_MODEL environment variable
+  > ai_model
+  > ark_model
+```
+
+API Key priority is:
+
+```text
+AI_API_KEY environment variable
+  > ai_api_key
+  > ARK_API_KEY environment variable
+  > ark_api_key
+```
+
+---
+
+#### 4.6.4. Environment Variables
+
+Environment variables can temporarily override configuration files, which is useful for local tests or deployments.
+
+General environment variables:
+
+| Environment Variable | Description |
+|----------------------|-------------|
+| `AI_PROVIDER` | Overrides `ai_provider`. |
+| `AI_MODEL` | Overrides `ai_model`. |
+| `AI_BASE_URL` | Overrides `ai_base_url`. |
+| `AI_API_KEY` | Overrides `ai_api_key`. |
+
+Provider-specific environment variables:
+
+| Provider | Environment Variables |
+|----------|-----------------------|
+| `ark` | `ARK_API_KEY` |
+| `openai` | `OPENAI_API_KEY` |
+| `gemini` | `GEMINI_API_KEY` / `GOOGLE_API_KEY` |
+| `dashscope` | `DASHSCOPE_API_KEY` / `QWEN_API_KEY` |
+| `siliconflow` | `SILICONFLOW_API_KEY` |
+
+---
+
+#### 4.6.5. Use the Default Ark / Volcengine Model
+
+To keep using the original Volcengine Ark model, keep the default Provider:
+
+```json
+{
+  "ai_provider": "ark",
+  "ark_model": "doubao-seed-2-0-mini-260215",
+  "ark_api_key": "YOUR_ARK_API_KEY"
+}
+```
+
+You can also use environment variables:
+
+```powershell
+$env:AI_PROVIDER = "ark"
+$env:ARK_API_KEY = "YOUR_ARK_API_KEY"
+```
+
+This is suitable when:
+
+- you want to keep using the existing Volcengine Ark model;
+- you do not want to change the existing Dashboard workflow;
+- you need backward compatibility with older configuration files.
+
+---
+
+#### 4.6.6. Use an OpenAI Vision Model
+
+Configuration example:
+
+```json
+{
+  "ai_provider": "openai",
+  "ai_model": "gpt-4o-mini",
+  "ai_api_key": "YOUR_OPENAI_API_KEY"
+}
+```
+
+Environment variable example:
+
+```powershell
+$env:AI_PROVIDER = "openai"
+$env:AI_MODEL = "gpt-4o-mini"
+$env:OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
+```
+
+The system automatically uses:
+
+```text
+https://api.openai.com/v1/chat/completions
+```
+
+---
+
+#### 4.6.7. Use Gemini OpenAI-compatible API
+
+Configuration example:
+
+```json
+{
+  "ai_provider": "gemini",
+  "ai_model": "gemini-2.5-flash",
+  "ai_api_key": "YOUR_GEMINI_API_KEY"
+}
+```
+
+Environment variable example:
+
+```powershell
+$env:AI_PROVIDER = "gemini"
+$env:AI_MODEL = "gemini-2.5-flash"
+$env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
+```
+
+The system automatically uses:
+
+```text
+https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+```
+
+---
+
+#### 4.6.8. Use DashScope / Qwen Compatible Mode
+
+Configuration example:
+
+```json
+{
+  "ai_provider": "dashscope",
+  "ai_model": "qwen-vl-plus",
+  "ai_api_key": "YOUR_DASHSCOPE_API_KEY"
+}
+```
+
+Environment variable example:
+
+```powershell
+$env:AI_PROVIDER = "dashscope"
+$env:AI_MODEL = "qwen-vl-plus"
+$env:DASHSCOPE_API_KEY = "YOUR_DASHSCOPE_API_KEY"
+```
+
+The system automatically uses:
+
+```text
+https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+```
+
+---
+
+#### 4.6.9. Use a Custom OpenAI-compatible Service
+
+For a third-party relay service, local model gateway, or self-hosted compatible service, use:
+
+```json
+{
+  "ai_provider": "openai_compatible",
+  "ai_model": "your-vision-model",
+  "ai_base_url": "http://127.0.0.1:9000/v1",
+  "ai_api_key": "YOUR_API_KEY"
+}
+```
+
+The final request URL is automatically resolved to:
+
+```text
+http://127.0.0.1:9000/v1/chat/completions
+```
+
+If `ai_base_url` already points to the full endpoint:
+
+```json
+{
+  "ai_base_url": "http://127.0.0.1:9000/v1/chat/completions"
+}
+```
+
+The system uses that endpoint directly and does not append the path again.
+
+---
+
+#### 4.6.10. Current Model Info in Dashboard
+
+The AI Status area in Dashboard now includes a `Model Info` block showing the effective backend model settings.
+
+Example:
+
+```text
+Provider: openai
+Client:   openai_compatible
+Model:    gpt-4o-mini
+Base URL: https://api.openai.com/v1
+API Key:  configured
+Timeout:  30s
+```
+
+Field description:
+
+| Item | Description |
+|------|-------------|
+| `Provider` | Current model platform. |
+| `Client` | Actual backend client type. |
+| `Model` | Current model ID. |
+| `Base URL` | Current request base URL. |
+| `API Key` | Shows only whether a key is configured. The real key is never returned. |
+| `Timeout` | Request timeout. |
+
+If the API Key is missing, Dashboard shows:
+
+```text
+API Key: missing
+```
+
+In this state, AI model calls will not work, but basic video upload, preview, recording, and snapshot functions are not affected.
+
+---
+
+#### 4.6.11. Model Output Format
+
+Regardless of the Provider, model output must be parseable as one JSON object.
+
+The current system expects these fields:
+
+```json
+{
+  "has_person": true,
+  "person_count": 1,
+  "activity": "standing",
+  "risk_level": "info",
+  "summary": "A person is standing in the monitored area.",
+  "confidence": 0.87
+}
+```
+
+Field description:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `has_person` | boolean | Whether a person appears in the frame. |
+| `person_count` | number or null | Number of people. |
+| `activity` | string | Activity state, such as `passing` / `standing` / `lingering` / `unknown`. |
+| `risk_level` | string | Suggested values: `info` / `warn` / `critical`. |
+| `summary` | string | Short description. |
+| `confidence` | number | Confidence score from 0 to 1. |
+
+If some fields are missing, the system tries to fill defaults. For stable behavior, it is still recommended to require the model to output only JSON in the prompt:
+
+```text
+Only output one JSON object. Do not output markdown or extra explanations.
+```
+
+---
+
+#### 4.6.12. Verification and Tests
+
+Automated tests have been added for this module, covering:
+
+- Provider configuration resolution;
+- Ark legacy field compatibility;
+- Base URL resolution to `/chat/completions`;
+- OpenAI-compatible response parsing;
+- sanitized model information output;
+- Dashboard Model Info container rendering;
+- a complete request chain against a local fake OpenAI-compatible vision service.
+
+Run tests:
+
+```powershell
+python -m pytest -q
+```
+
+Current verification result:
+
+```text
+12 passed
+```
+
+The local fake model service test verifies that:
+
+- the request path is `/v1/chat/completions`;
+- `Authorization: Bearer ...` is sent;
+- the request body contains the correct `model`;
+- the image is sent as `data:image/jpeg;base64,...`;
+- the model JSON output can be parsed and normalized by the system.
+
+---
 <a id="sec5"></a>
 
 ## 5. Version Information & Notes [⌃](#top)
