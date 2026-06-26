@@ -58,4 +58,48 @@ def test_dashboard_has_model_info_container(tmp_path):
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert 'id="aiModelInfo"' in html
+    assert 'id="ai_provider"' in html
+    assert 'id="ai_model"' in html
+    assert 'id="ai_base_url"' in html
+    assert 'id="ai_api_key"' in html
+    assert 'id="ai_request_timeout_sec"' in html
+    assert 'id="aiProviderHint"' in html
     assert "Model Info" in html
+
+
+def test_config_update_accepts_provider_fields_and_masks_keys(tmp_path):
+    client = _make_test_client(tmp_path)
+
+    resp = client.put("/api/config", json={
+        "ai_provider": "openai_compatible",
+        "ai_model": "local-vision-test",
+        "ai_base_url": "http://127.0.0.1:9000/v1",
+        "ai_api_key": "local-secret",
+        "ai_request_timeout_sec": 45,
+        "ark_api_key": "legacy-secret",
+    })
+
+    assert resp.status_code == 200
+    assert resp.get_json()["ok"] is True
+
+    cfg_resp = client.get("/api/config")
+    assert cfg_resp.status_code == 200
+    cfg = cfg_resp.get_json()
+    assert cfg["ai_provider"] == "openai_compatible"
+    assert cfg["ai_model"] == "local-vision-test"
+    assert cfg["ai_base_url"] == "http://127.0.0.1:9000/v1"
+    assert cfg["ai_request_timeout_sec"] == 45
+    assert cfg["ai_api_key"] == "******"
+    assert cfg["ark_api_key"] == "******"
+
+    status_resp = client.get("/api/ai/status")
+    assert status_resp.status_code == 200
+    model_info = status_resp.get_json()["data"]["model_info"]
+    assert model_info == {
+        "provider": "openai_compatible",
+        "kind": "openai_compatible",
+        "model": "local-vision-test",
+        "base_url": "http://127.0.0.1:9000/v1",
+        "timeout_sec": 45,
+        "api_key_set": True,
+    }

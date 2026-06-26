@@ -7,6 +7,45 @@ let __cfgCache = {};
 const pageLoadTs = Date.now() / 1000;
 let lastAIShown = false;
 
+const PROVIDER_PRESETS = {
+  ark: {
+    label: "Ark / Volcengine",
+    baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+    keyHint: "AI_API_KEY or ARK_API_KEY",
+    modelHint: "Use ai_model, or leave it empty to fall back to Legacy Ark Model."
+  },
+  openai: {
+    label: "OpenAI",
+    baseUrl: "https://api.openai.com/v1",
+    keyHint: "AI_API_KEY or OPENAI_API_KEY",
+    modelHint: "Use a vision-capable OpenAI model."
+  },
+  gemini: {
+    label: "Gemini",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    keyHint: "AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY",
+    modelHint: "Use a Gemini model exposed through the OpenAI-compatible endpoint."
+  },
+  dashscope: {
+    label: "DashScope",
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    keyHint: "AI_API_KEY, DASHSCOPE_API_KEY, or QWEN_API_KEY",
+    modelHint: "Use a Qwen vision model supported by DashScope compatible mode."
+  },
+  siliconflow: {
+    label: "SiliconFlow",
+    baseUrl: "https://api.siliconflow.cn/v1",
+    keyHint: "AI_API_KEY or SILICONFLOW_API_KEY",
+    modelHint: "Use a SiliconFlow vision-capable model."
+  },
+  openai_compatible: {
+    label: "OpenAI-compatible / Local",
+    baseUrl: "",
+    keyHint: "AI_API_KEY or the gateway key",
+    modelHint: "Set both Model ID and Base URL for your third-party or local service."
+  }
+};
+
 
 async function fetchJson(url, opts) {
   const r = await fetch(url, opts || {});
@@ -37,6 +76,11 @@ async function refreshConfigForm() {
   };
 
   setVal("ai_enabled", cfg.json.ai_enabled);
+  setVal("ai_provider", cfg.json.ai_provider);
+  setVal("ai_model", cfg.json.ai_model);
+  setVal("ai_base_url", cfg.json.ai_base_url);
+  setVal("ai_api_key", cfg.json.ai_api_key);
+  setVal("ai_request_timeout_sec", cfg.json.ai_request_timeout_sec);
   setVal("ark_model", cfg.json.ark_model);
   setVal("ark_api_key", cfg.json.ark_api_key);
   setVal("ai_interval_observe", cfg.json.ai_interval_observe);
@@ -69,6 +113,32 @@ function syncAiUi() {
     btn.classList.add("danger");
   } else {
     btn.classList.add("primary");
+  }
+
+  syncProviderUi();
+}
+
+function syncProviderUi() {
+  const providerEl = document.getElementById("ai_provider");
+  const hintEl = document.getElementById("aiProviderHint");
+  const baseEl = document.getElementById("ai_base_url");
+  const modelEl = document.getElementById("ai_model");
+  const keyEl = document.getElementById("ai_api_key");
+  if (!providerEl) return;
+
+  const provider = providerEl.value || "ark";
+  const preset = PROVIDER_PRESETS[provider] || PROVIDER_PRESETS.ark;
+  if (baseEl) baseEl.placeholder = preset.baseUrl || "required, e.g. http://127.0.0.1:9000/v1";
+  if (modelEl) modelEl.placeholder = provider === "ark" ? "optional; falls back to Legacy Ark Model" : "vision-capable model id";
+  if (keyEl) keyEl.placeholder = preset.keyHint;
+  if (hintEl) {
+    const baseText = preset.baseUrl || "custom Base URL is required";
+    hintEl.innerHTML = `
+      <b>${_escapeHtml(preset.label)}</b>
+      <span>Base URL: ${_escapeHtml(baseText)}</span>
+      <span>Key: ${_escapeHtml(preset.keyHint)}</span>
+      <span>${_escapeHtml(preset.modelHint)}</span>
+    `;
   }
 }
 
@@ -183,7 +253,7 @@ async function refreshAI() {
 
   const data = r.json.data || {};
   if (rawPre) rawPre.textContent = JSON.stringify(data, null, 2);
-  if (elModelInfo) elModelInfo.textContent = _formatModelInfo(data.model_info || {});
+  if (elModelInfo) elModelInfo.innerHTML = _formatModelInfo(data.model_info || {});
 
   const state = String(data.state || "?");
   const eventId = data.event_id || "—";
@@ -248,6 +318,15 @@ async function refreshAI() {
   }
 }
 
+function _escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function _formatModelInfo(info) {
   const provider = info.provider || "N/A";
   const kind = info.kind || "N/A";
@@ -255,14 +334,40 @@ function _formatModelInfo(info) {
   const baseUrl = info.base_url || "N/A";
   const timeout = info.timeout_sec ?? "N/A";
   const keyState = info.api_key_set ? "configured" : "missing";
-  return [
-    `Provider: ${provider}`,
-    `Client:   ${kind}`,
-    `Model:    ${model}`,
-    `Base URL: ${baseUrl}`,
-    `API Key:  ${keyState}`,
-    `Timeout:  ${timeout}s`
-  ].join("\n");
+  const missing = [];
+  if (!info.model) missing.push("model");
+  if (!info.api_key_set) missing.push("API key");
+  if (provider === "openai_compatible" && !info.base_url) missing.push("base URL");
+
+  let statusClass = "ok";
+  let statusText = "Ready";
+  if (missing.length > 0) {
+    statusClass = "warn";
+    statusText = `Needs ${missing.join(", ")}`;
+  }
+
+  const rows = [
+    ["Provider", provider],
+    ["Client", kind],
+    ["Model", model],
+    ["Base URL", baseUrl],
+    ["API Key", keyState],
+    ["Timeout", `${timeout}s`]
+  ].map(([k, v]) => `
+    <div class="model-info-row">
+      <span>${_escapeHtml(k)}</span>
+      <strong>${_escapeHtml(v)}</strong>
+    </div>
+  `).join("");
+
+  return `
+    <div class="model-info-card">
+      <div class="model-info-top">
+        <span class="model-info-status ${statusClass}">${_escapeHtml(statusText)}</span>
+      </div>
+      <div class="model-info-grid">${rows}</div>
+    </div>
+  `;
 }
 
 
@@ -498,6 +603,11 @@ async function applyConfig() {
     autosave: document.getElementById("autosave").value === "true",
 
     ai_enabled: !!document.getElementById("ai_enabled")?.checked,
+    ai_provider: document.getElementById("ai_provider")?.value || "ark",
+    ai_model: document.getElementById("ai_model")?.value || "",
+    ai_base_url: document.getElementById("ai_base_url")?.value || "",
+    ai_api_key: document.getElementById("ai_api_key")?.value || "",
+    ai_request_timeout_sec: parseInt(document.getElementById("ai_request_timeout_sec")?.value || "30"),
     ark_model: document.getElementById("ark_model")?.value || "",
     ark_api_key: document.getElementById("ark_api_key")?.value || "",
 
@@ -669,11 +779,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const ingestBtn = document.getElementById("ingestToggleBtn");
   const recordBtn = document.getElementById("recordToggleBtn");
   const shutdownBtn = document.getElementById("shutdownBtn");
+  const providerSelect = document.getElementById("ai_provider");
 
   if (btn) btn.addEventListener("click", toggleAiEnabled);
   if (ingestBtn) ingestBtn.addEventListener("click", toggleIngest);
   if (recordBtn) recordBtn.addEventListener("click", toggleRecording);
   if (shutdownBtn) shutdownBtn.addEventListener("click", shutdownSystem);
+  if (providerSelect) providerSelect.addEventListener("change", syncProviderUi);
 
   setTimeout(syncAiUi, 0);
   syncAiUi();

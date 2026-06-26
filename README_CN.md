@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.1-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,7 +12,7 @@
 
 本项目已被 [科技爱好者周刊](#CR) 和 [科技补全](#CR) 收录。感谢他们的认可与支持。
 
-🚀 最新更新（持续迭代中）：[v1.1.1 — 2026-05-30](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 最新更新（持续迭代中）：[v1.1.2 — 2026-06-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 ---
 
@@ -992,8 +992,14 @@ Dashboard 页面的 AI 模块由配置设置区与信息输出区构成：
 
 | 配置名 | 字段形式 | 作用 | 推荐取值 |
 |--------|----------|------|----------|
-| **Model / Endpoint** | 字符串（模型ID或Endpoint） | 指定调用的视觉模型 | 使用支持视觉分析的模型ID，例如 `doubao-seed-2-0-mini-260215`。 |
-| **API Key** | 字符串（密钥） | 第三方模型服务访问凭证 | 需要到模型提供方获取并填入，请查看 [4.6. 第三方模型调用](#sec46)。 |
+| **Provider** | 下拉选项 | 选择当前视觉模型平台 | 可选 Ark、OpenAI、Gemini、DashScope、SiliconFlow 或 OpenAI-compatible / Local。 |
+| **Model ID** | 字符串（模型 ID） | 指定通用视觉模型 ID | 使用支持视觉分析的模型 ID；Ark 可留空并回退到 Legacy Ark Model。 |
+| **Provider Hint** | 自动提示 | 根据 Provider 显示默认 Base URL、Key 来源和模型填写建议 | 切换 Provider 后自动更新，用于减少配置错误。 |
+| **Base URL** | 字符串（接口地址） | 自定义第三方 / 本地模型服务地址 | 内置 Provider 可留空；`openai_compatible` 通常需要填写。 |
+| **Provider API Key** | 字符串（密钥） | 通用模型服务访问凭证 | 需要到模型提供方获取并填入，请查看 [4.6. 第三方模型调用](#sec46)。 |
+| **Timeout (sec)** | 数字（秒） | 单次模型请求超时时间 | 允许 5–120 秒，默认 30 秒。 |
+| **Legacy Ark Model** | 字符串（模型 ID） | 兼容旧版 Ark / 火山方舟模型字段 | 默认可继续使用 `doubao-seed-2-0-mini-260215`。 |
+| **Legacy Ark API Key** | 字符串（密钥） | 兼容旧版 Ark / 火山方舟 API Key | 仅在通用 Provider API Key 为空时作为 Ark 回退使用。 |
 | **OBSERVE Interval (sec)** | 数字（秒） | 控制 OBSERVE 状态下模型调用的最小间隔 | 推荐 2–3 秒，过小会增加 token 消耗。 |
 | **Dwell Threshold (sec)** | 数字（秒） | 目标持续存在多久才确认事件 | 推荐 3–5 秒，适当调大可减少偶发误报。 |
 | **End Grace (sec)** | 数字（秒） | 目标消失后延迟多久结束事件 | 推荐 2–3 秒，避免短暂遮挡导致事件中断。 |
@@ -1075,6 +1081,8 @@ Dashboard 页面的 AI 模块由配置设置区与信息输出区构成：
 | Event	| 字符串（evt_xxxxx）	| 指明当前活跃事件 ID |
 | Dwell	| Yes / No	| 判断 dwell 机制是否已达到确认阈值 |
 | Health	| Fine / Error	| 表示最近一次模型调用是否成功 |
+
+- Model Info 会同步展示当前 Provider、客户端类型、模型 ID、Base URL、API Key 是否已配置、请求超时时间，并以 `Ready` / `Needs ...` 提示当前模型配置是否完整。
 
 - 状态机
 
@@ -1185,7 +1193,7 @@ Event duration: 153.9 s
 
 Sentinel 的 AI 模块为可切换的视觉模型 Provider 架构。可以通过配置切换到 OpenAI、Gemini、DashScope、SiliconFlow，或其他提供 OpenAI-compatible 接口的第三方 / 本地视觉模型服务。
 
-> 模型切换通过 `app/config/config.json`、环境变量或代码默认配置完成。Dashboard 已支持显示当前生效模型信息。
+> 模型切换可以通过 Dashboard 前端配置区、`app/config/config.json`、环境变量或代码默认配置完成。Dashboard 已支持编辑 Provider / Model / Base URL / API Key / Timeout，并显示当前生效模型信息。
 
 ---
 
@@ -1200,8 +1208,8 @@ Sentinel 的 AI 模块为可切换的视觉模型 Provider 架构。可以通过
 | `app/ai/ai_monitor_worker.py` | AI 监控线程，通过 `create_vision_client()` 创建当前模型客户端 |
 | `app/config/config_store.py` | 新增通用模型配置字段与校验逻辑 |
 | `app/web/webapp.py` | `/api/ai/status` 返回脱敏后的 `model_info` |
-| `app/web/templates/dashboard.html` | AI Status 区域新增 Model Info 显示块 |
-| `app/web/static/dashboard.js` | 前端渲染当前模型信息 |
+| `app/web/templates/dashboard.html` | AI Settings 新增 Provider 配置字段，AI Status 区域新增 Model Info 显示块 |
+| `app/web/static/dashboard.js` | 前端加载、提交 Provider 配置，并渲染当前模型信息与配置完整性状态 |
 
 AI 模型调用链路如下：
 
@@ -1445,6 +1453,7 @@ Dashboard 的 AI Status 区域新增了 `Model Info` 显示块，用于展示当
 显示内容示例：
 
 ```text
+Status:   Ready
 Provider: openai
 Client:   openai_compatible
 Model:    gpt-4o-mini
@@ -1457,6 +1466,7 @@ Timeout:  30s
 
 | 显示项 | 说明 |
 |--------|------|
+| `Status` | 当前模型配置完整性状态，常见为 `Ready` 或 `Needs model / API key / base URL` |
 | `Provider` | 当前选择的模型平台 |
 | `Client` | 后端实际使用的客户端类型 |
 | `Model` | 当前模型 ID |
@@ -1467,6 +1477,7 @@ Timeout:  30s
 若 API Key 缺失，Dashboard 会显示：
 
 ```text
+Status: Needs API key
 API Key: missing
 ```
 
@@ -1519,7 +1530,8 @@ Only output one JSON object. Do not output markdown or extra explanations.
 - Base URL 到 `/chat/completions` 的拼接逻辑；
 - OpenAI-compatible 响应解析；
 - API Key 脱敏模型信息输出；
-- Dashboard 是否包含 Model Info 容器；
+- Dashboard 是否包含 Provider 配置字段与 Model Info 容器；
+- `/api/config` 是否可更新通用 Provider 字段并在 `/api/ai/status` 中生效；
 - 使用本地假 OpenAI-compatible 服务完整验证请求链路。
 
 运行测试：
@@ -1553,10 +1565,10 @@ python -m pytest -q
 
 Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 组成，当前版本信息如下：
 
-- **Sentinel（PC + Dashboard）版本**：v1.0.0
+- **Sentinel（PC + Dashboard）版本**：v1.1.2
 - **CamFlow（Android）版本**：v1.1.0
-- **本文档版本**：v1.0.0
-- **最后更新日期**：2026-03-23
+- **本文档版本**：v1.1.2
+- **最后更新日期**：2026-06-26
 
 ---
 

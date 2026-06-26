@@ -399,6 +399,73 @@ html, body {
   word-break: break-word;
 }
 
+.provider-hint{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #444;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.model-info-card{
+  font-family: Arial, sans-serif;
+  white-space: normal;
+}
+
+.model-info-top{
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.model-info-status{
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #ccc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.model-info-status.ok{
+  background: #eaffea;
+  border-color: #77cc77;
+}
+
+.model-info-status.warn{
+  background: #fff6df;
+  border-color: #e6c35a;
+}
+
+.model-info-grid{
+  display: grid;
+  gap: 6px;
+}
+
+.model-info-row{
+  display: grid;
+  grid-template-columns: minmax(70px, 0.35fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  font-size: 12px;
+}
+
+.model-info-row span{
+  color: #555;
+}
+
+.model-info-row strong{
+  color: #222;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-weight: 700;
+  word-break: break-word;
+}
+
 .ai-summary{
   margin-top: 6px;
   font-size: 12px;

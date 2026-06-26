@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.1-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,7 +12,7 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
-🚀 Latest Update (ongoing): [v1.1.1 — 2026-05-30](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 Latest Update (ongoing): [v1.1.2 — 2026-06-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 ---
 
@@ -983,8 +983,14 @@ It is recommended to understand the purpose of each parameter before enabling th
 
 | Configuration | Format | Purpose | Recommended Value |
 |--------|----------|------|----------|
-| **Model / Endpoint** | String (Model ID or Endpoint) | Specifies the vision model to call | Use a model that supports vision analysis, e.g., `doubao-seed-2-0-mini-260215`. |
-| **API Key** | String (key) | Credential for third-party model service access | Must be obtained from the provider. See [4.6. Third-party Model Integration](#sec46). |
+| **Provider** | Select option | Selects the active visual model platform | Ark, OpenAI, Gemini, DashScope, SiliconFlow, or OpenAI-compatible / Local. |
+| **Model ID** | String (model ID) | Specifies the generic visual model ID | Use a vision-capable model ID; Ark can be left empty to fall back to Legacy Ark Model. |
+| **Provider Hint** | Auto hint | Shows the default Base URL, key source, and model guidance for the selected Provider | Updates automatically when the Provider changes to reduce configuration mistakes. |
+| **Base URL** | String (endpoint URL) | Custom third-party / local model service URL | Can be left empty for built-in Providers; usually required for `openai_compatible`. |
+| **Provider API Key** | String (key) | Generic model service credential | Must be obtained from the provider. See [4.6. Third-party Model Integration](#sec46). |
+| **Timeout (sec)** | Number (seconds) | Timeout for one model request | Allowed range: 5–120 seconds; default: 30 seconds. |
+| **Legacy Ark Model** | String (model ID) | Backward-compatible Ark / Volcengine model field | Existing deployments can continue using `doubao-seed-2-0-mini-260215`. |
+| **Legacy Ark API Key** | String (key) | Backward-compatible Ark / Volcengine API Key | Used as an Ark fallback only when the generic Provider API Key is empty. |
 | **OBSERVE Interval (sec)** | Number (seconds) | Minimum interval between model calls in OBSERVE state | Recommended 2–3 seconds. Too small increases token consumption. |
 | **Dwell Threshold (sec)** | Number (seconds) | Duration a target must persist before confirming an event | Recommended 3–5 seconds. Increasing reduces occasional false positives. |
 | **End Grace (sec)** | Number (seconds) | Delay before ending event after target disappears | Recommended 2–3 seconds to avoid interruption due to brief occlusion. |
@@ -1069,6 +1075,8 @@ Located at the top of the AI Status panel, displaying the current state machine 
 | Event | String (evt_xxxxx) | Current active event ID |
 | Dwell | Yes / No | Whether dwell confirmation threshold has been reached |
 | Health | Fine / Error | Whether the most recent model call succeeded |
+
+- Model Info shows the current Provider, client type, model ID, Base URL, whether the API Key is configured, request timeout, and a `Ready` / `Needs ...` configuration status.
 
 - State Machine Description
 
@@ -1193,7 +1201,7 @@ After an event ends, it is written into `log/ai_events.jsonl` and displayed in c
 
 Sentinel's AI module now uses a switchable visual model Provider architecture. You can switch to OpenAI, Gemini, DashScope, SiliconFlow, or other third-party / local visual model services that expose an OpenAI-compatible API through configuration.
 
-> Model switching is configured through `app/config/config.json`, environment variables, or code defaults. The Dashboard already displays the currently effective model information.
+> Model switching can be completed through the Dashboard configuration panel, `app/config/config.json`, environment variables, or code defaults. The Dashboard can edit Provider / Model / Base URL / API Key / Timeout and display the currently effective model information.
 
 ---
 
@@ -1208,8 +1216,8 @@ The model replacement capability is implemented by the following files:
 | `app/ai/ai_monitor_worker.py` | AI monitoring worker. Creates the current model client through `create_vision_client()`. |
 | `app/config/config_store.py` | Adds and validates general model configuration fields. |
 | `app/web/webapp.py` | Adds sanitized `model_info` to `/api/ai/status`. |
-| `app/web/templates/dashboard.html` | Adds the Model Info block to the AI Status area. |
-| `app/web/static/dashboard.js` | Renders the current model information in the frontend. |
+| `app/web/templates/dashboard.html` | Adds Provider configuration fields to AI Settings and the Model Info block to the AI Status area. |
+| `app/web/static/dashboard.js` | Loads and submits Provider configuration, then renders the current model information and configuration completeness state. |
 
 The AI model call chain is:
 
@@ -1453,6 +1461,7 @@ The AI Status area in Dashboard now includes a `Model Info` block showing the ef
 Example:
 
 ```text
+Status:   Ready
 Provider: openai
 Client:   openai_compatible
 Model:    gpt-4o-mini
@@ -1465,6 +1474,7 @@ Field description:
 
 | Item | Description |
 |------|-------------|
+| `Status` | Configuration completeness state, usually `Ready` or `Needs model / API key / base URL`. |
 | `Provider` | Current model platform. |
 | `Client` | Actual backend client type. |
 | `Model` | Current model ID. |
@@ -1475,6 +1485,7 @@ Field description:
 If the API Key is missing, Dashboard shows:
 
 ```text
+Status: Needs API key
 API Key: missing
 ```
 
@@ -1527,7 +1538,8 @@ Automated tests have been added for this module, covering:
 - Base URL resolution to `/chat/completions`;
 - OpenAI-compatible response parsing;
 - sanitized model information output;
-- Dashboard Model Info container rendering;
+- Dashboard Provider configuration fields and Model Info container rendering;
+- `/api/config` generic Provider updates taking effect in `/api/ai/status`;
 - a complete request chain against a local fake OpenAI-compatible vision service.
 
 Run tests:
@@ -1562,10 +1574,10 @@ The local fake model service test verifies that:
 The Sentinel system consists of **PC-side service program + Web Dashboard + Android CamFlow client**.  
 The current version information is as follows:
 
-- **Sentinel (PC + Dashboard) Version**: v1.0.0
+- **Sentinel (PC + Dashboard) Version**: v1.1.2
 - **CamFlow (Android) Version**: v1.1.0
-- **Documentation Version**: v1.0.0
-- **Last Updated**: 2026-03-23
+- **Documentation Version**: v1.1.2
+- **Last Updated**: 2026-06-26
 
 ---
 
@@ -1675,4 +1687,3 @@ Copyright © 2026 Suzuran0y
 ### Star History [⌃](#top)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=suzuran0y/CCTV-Smartphone-AI-Monitoring&type=Date)](https://star-history.com/#suzuran0y/CCTV-Smartphone-AI-Monitoring&Date)
-

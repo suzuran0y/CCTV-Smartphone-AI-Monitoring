@@ -157,12 +157,49 @@
             <!-- AI Settings -->
             <div id="aiSettingsSection" class="ai-grid">
               <div class="field">
-                <label>Model / Endpoint</label>
+                <label>Provider</label>
+                <select id="ai_provider">
+                  <option value="ark">Ark / Volcengine</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini">Gemini</option>
+                  <option value="dashscope">DashScope</option>
+                  <option value="siliconflow">SiliconFlow</option>
+                  <option value="openai_compatible">OpenAI-compatible / Local</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Model ID</label>
+                <input id="ai_model" type="text" placeholder="vision-capable model id">
+              </div>
+
+              <div class="field span-2">
+                <label>Provider Hint</label>
+                <div id="aiProviderHint" class="provider-hint">Select a provider to view connection details.</div>
+              </div>
+
+              <div class="field">
+                <label>Base URL</label>
+                <input id="ai_base_url" type="text" placeholder="optional provider base URL">
+              </div>
+
+              <div class="field">
+                <label>Provider API Key</label>
+                <input id="ai_api_key" type="password" placeholder="AI_API_KEY / provider key">
+              </div>
+
+              <div class="field">
+                <label>Timeout (sec)</label>
+                <input id="ai_request_timeout_sec" type="number" min="5" max="120" step="1">
+              </div>
+
+              <div class="field">
+                <label>Legacy Ark Model</label>
                 <input id="ark_model" type="text" placeholder="ep-xxxx / model-id">
               </div>
 
               <div class="field">
-                <label>API Key</label>
+                <label>Legacy Ark API Key</label>
                 <input id="ark_api_key" type="password" placeholder="API_KEY">
               </div>
 
