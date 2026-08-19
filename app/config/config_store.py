@@ -2,7 +2,7 @@
 import json
 import os
 import threading
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 # Optional placeholders (kept to preserve your original structure)
 API_KEY = ""
@@ -24,7 +24,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "segment_seconds": 60,
     "out_root": "recordings",
     "cam_name": "phone1",
-    "codec": "avc1",
+    "codec": "mp4v",
 
     # =========================
     # AI monitoring (triggered branch v1)
@@ -173,7 +173,7 @@ def validate_and_normalize(patch: dict) -> Tuple[bool, dict, str]:
 
 class ConfigStore:
     """Thread-safe config store with load/save and partial updates."""
-    def __init__(self, path: str = "config.json", initial: Dict[str, Any] | None = None):
+    def __init__(self, path: str = "config.json", initial: Optional[Dict[str, Any]] = None):
         self.path = path
         self.lock = threading.Lock()
         self.config = initial or DEFAULT_CONFIG.copy()

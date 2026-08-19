@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CamFlow</string>
+    <string name="camflow_version_format">CamFlow v%1$s</string>
 </resources>

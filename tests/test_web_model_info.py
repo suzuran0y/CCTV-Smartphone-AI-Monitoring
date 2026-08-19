@@ -65,9 +65,32 @@ def test_dashboard_has_model_info_container(tmp_path):
     assert 'id="ai_request_timeout_sec"' in html
     assert 'id="aiProviderHint"' in html
     assert "Model Info" in html
+    assert "v1.1.3" in html
+    assert "2026-08-20" in html
+    assert "v1.0.0-beta" not in html
 
 
-def test_config_update_accepts_provider_fields_and_masks_keys(tmp_path):
+def test_version_endpoint_uses_central_metadata(tmp_path):
+    client = _make_test_client(tmp_path)
+
+    resp = client.get("/api/version")
+
+    assert resp.status_code == 200
+    assert resp.get_json() == {
+        "ok": True,
+        "data": {
+            "sentinel": "1.1.3",
+            "camflow_source": "1.1.1",
+            "camflow_version_code": 5,
+            "camflow_apk_path": "PhoneCamSender/CamFlow-v1.1.1.apk",
+            "camflow_apk_sha256": "575CCBFDD37E8931A81329794953D76202269FD5D4D82FA08E265784BB2985EB",
+            "release_date": "2026-08-20",
+        },
+    }
+
+
+def test_config_update_accepts_provider_fields_and_masks_keys(tmp_path, caplog):
+    caplog.set_level(logging.INFO, logger="test-web-model-info")
     client = _make_test_client(tmp_path)
 
     resp = client.put("/api/config", json={
@@ -103,3 +126,6 @@ def test_config_update_accepts_provider_fields_and_masks_keys(tmp_path):
         "timeout_sec": 45,
         "api_key_set": True,
     }
+    assert "local-secret" not in caplog.text
+    assert "legacy-secret" not in caplog.text
+    assert "******" in caplog.text

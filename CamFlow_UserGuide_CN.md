@@ -3,7 +3,7 @@
 
 # CamFlow 使用说明
 
-[![Version](https://img.shields.io/badge/version-v1.1.0-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.1-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide_CN.md)
 [![Role](https://img.shields.io/badge/role-Client-blue)](README_CN.md)
 [![Protocol](https://img.shields.io/badge/protocol-HTTP%20Upload-orange)](#sec42)
@@ -70,7 +70,7 @@ CamFlow 与 PC 端服务器共同构成 Sentinel 系统：
 #### 工程方向
 
 - 分布式视频数据采集架构设计  
-- 局域网自动发现机制  
+- 局域网手动配置与连接验证
 - 轻量级图像帧上传协议  
 - 客户端运行状态管理  
 
@@ -112,9 +112,9 @@ CamFlow 主要功能包括：
    - 将帧编码为 JPEG；
    - 通过 HTTP 上传至 PC 端服务接口（`/upload`）。
 
-2. **服务器自动发现**
-   - 通过局域网 UDP 广播尝试发现可用的 Sentinel PC 端服务；
-   - 若发现失败，自动降级为手动输入服务器地址。
+2. **服务器地址配置**
+   - PC 端 `server.py` 启动时输出 CamFlow 所需的 `IP:PORT`；
+   - 首次使用时手动输入并保存，以后启动会先测试已保存的地址。
 
 3. **连接测试与状态可视化**
    - 提供连接状态（Status/Server）显示；
@@ -134,7 +134,7 @@ CamFlow 主要功能包括：
 #### 1.3.1. 普通用户安装（APK 安装包）
 > 适用于“使用者/部署者”。
 
-1. 在 GitHub 项目的 **Releases** 页面下载 `CamFlow-v1.0.0-beta.apk`（未来你发布后将提供）。
+1. 使用仓库内已验证的 `CamFlow-v1.1.1.apk`（debug-signed），或从 GitHub 项目的 **Releases** 页面下载 APK。
 2. 安装并打开 CamFlow。
 3. 首次启动会请求摄像头权限，点击允许。
 
@@ -158,13 +158,6 @@ CamFlow 主要功能包括：
     <td align="center">
       <img src="assets/app_main_page.jpg" width="250"><br>
       <b>图 1 - 主界面（未连接状态）</b><br></td>
-    <td align="center">
-      <img src="assets/app_failed_hint.jpg" width="250"><br>
-      <b>图 2 - 自动发现失败提示</b><br></td>
-    <td align="center">
-      <img src="assets/app_setting_page.jpg" width="250"><br>
-      <b>图 3 - 设置页</b><br>
-    </td>
   </tr>
 </table>
 
@@ -173,11 +166,10 @@ CamFlow 主要功能包括：
 | 字段 | 可能状态 | 语义解释 | 触发场景 |
 |------|---------------|--------------|--------------|
 | **Status** | Not connected | 尚未建立有效服务器连接 | 首次启动 / 未配置服务器 |
-|  | Discovering server... | 正在进行局域网自动发现 | 点击 Auto discover 后 |
 |  | Connecting... | 正在尝试连接服务器 | 手动输入地址后 |
 |  | Connected | 已成功连接并通过可达性验证 | `/ping` 成功 |
 |  **Server**| Not connected | 当前无可用服务器地址 | 未配置 / 连接失败 |
-|  | xxx.xxx.xxx.xxx(:xxxx) | 已识别/保存服务器 IP (端口) | 自动发现成功 / 手动输入 |
+|  | xxx.xxx.xxx.xxx(:xxxx) | 已保存服务器 IP (端口) | 手动输入并连接成功 |
 | **Mode** | Normal | 正常采集并上传，显示预览 | 正常模式 |
 |  | Hidden Preview | 画面隐藏但仍上传 | 开启 Hide camera preview |
 |  | Stopped | 停止采集与上传 | 开启 Stop camera |
@@ -190,23 +182,14 @@ CamFlow 主要功能包括：
 
 ### 2.2. 连接服务器 [⌃](#top)
 
-#### 2.2.1 自动发现
+#### 2.2.1. 手动输入
 
-当 CamFlow 未配置服务器地址时，会尝试在局域网内自动发现服务器，且状态会显示为：`Discovering server...`
-
-自动发现成功后，CamFlow 会填入服务器地址并进入可连接/上传状态（以具体网络环境为准：可能直接连接，也可能需用户确认保存）。
-
----
-
-#### 2.2.2. 手动输入
-若自动发现服务器失败，CamFlow 会弹出提示框（如图2）要求用户手动输入服务器地址。
+首次启动 CamFlow 时，App 会弹出提示框，要求手动输入 Sentinel 服务器地址。请先在 PC 端运行 `server.py`，再将启动输出中 `CamFlow:` 后的地址填入 App。
 
 提示框含义与输入规范：
 
-- **Connection failed / Could not find the server automatically**
-  - 说明局域网自动发现功能未得到响应。
-
-- **Enter IP address**
+- **Enter Sentinel server address**
+  - 输入 `server.py` 显示的 CamFlow 地址。
   - 输入服务器 IP（若非默认端口可附带输入）。
   - 格式举例：
     - `192.168.1.10`（默认端口将被自动补全，通常为 `8000`）
@@ -220,7 +203,7 @@ CamFlow 主要功能包括：
 <a id="sec23"></a>
 
 ### 2.3. 设置页 [⌃](#top)
-点击 **主界面右上角** 进入设置页（如图3），完成服务器配置、连接测试与运行开关设置。
+点击 **主界面右上角** 进入设置页，完成服务器配置、连接测试与运行开关设置。
 
 #### 设置页字段定义与功能说明
 
@@ -232,7 +215,6 @@ CamFlow 主要功能包括：
 
 | 按钮 | 触发 | 状态 | 功能说明 |
 |------|------|---------------|----------|
-| Auto discover | 点击 | 触发一次发现流程 | 在局域网中广播寻找服务器，尝试部署 |
 | Test connection | 点击 | 成功 / 失败 | 向服务器发送可达性测试请求（如 `/ping`）|
 | Save | 点击 | 保存成功 | 使用当前服务器地址与设置 |
 
@@ -282,27 +264,12 @@ CamFlow 主要功能包括：
 ## 3. 常见问题 [⌃](#top)
 
 <details>
-<summary><strong>无法自动发现服务器（Auto discover 失败）</strong></summary>
+<summary><strong>首次使用时应填写哪个地址？</strong></summary>
 
-- 状态显示 `Discovering server...` 后失败；
-- 弹出 “Could not find the server automatically”。
-
-**可能原因**
-1. 手机与 PC 不在同一局域网
-2. 路由器启用 AP 隔离，导致设备间不可互访
-3. 网络策略/设备系统限制 UDP 广播
-4. PC 端服务未开启发现响应或端口被拦截
-
-**排查步骤**
-1. 在手机浏览器访问：`http://<PC_IP>:xxxx/ping`  
-   - 能访问：说明 TCP 可达，转用手动输入即可  
-   - 不能访问：检查防火墙/端口/网络隔离
-2. 尝试手动输入 `PC_IP:xxxx` 并点击 `Test connection`
-
-**解决方案**
-- 使用“手动输入”作为稳定方案；
-- 关闭路由器 AP 隔离；
-- 在 PC 防火墙放行设定端口（以及发现所需 UDP 端口，如你实现使用的端口）。
+1. 在 PC 端运行 `python server.py`。
+2. 找到终端输出中的 `CamFlow: <PC_IP>:8000`。
+3. 将 `<PC_IP>:8000` 填入 App，然后点击 `Connect`；也可在设置页先点击 `Test connection`。
+4. 如果失败，在手机浏览器访问 `http://<PC_IP>:8000/ping`，并检查 PC 防火墙、同一 Wi-Fi 与 AP 隔离设置。
 
 </details>
 
@@ -329,7 +296,7 @@ CamFlow 主要功能包括：
 **解决方案**
 - 点击右上角进入设置页内，更新设置一次；
 - 修正 IP/端口；
-- 在 PC 防火墙放行设定端口（以及发现所需 UDP 端口，如你实现使用的端口）。
+- 在 PC 防火墙放行设定的 HTTP 端口（默认 TCP 8000）。
 
 </details>
 
@@ -396,17 +363,16 @@ CamFlow (Android App)
 │   ├─ Main Screen（主界面）
 │   │   ├─ Camera Preview（实时预览）
 │   │   ├─ Status Header
-│   │   │   ├─ Status ∈ {NotConnected, Discovering, Connecting, Connected}
+│   │   │   ├─ Status ∈ {NotConnected, Connecting, Connected}
 │   │   │   ├─ Server（当前服务器地址）
 │   │   │   ├─ Mode ∈ {Normal}
 │   │   │   └─ Interval（发送间隔 ms）
 │   │   │
 │   │   └─ Connection Dialog
-│   │       └─ 自动发现失败 → 手动输入服务器地址
+│   │       └─ 首次启动 / 已保存地址失效 → 手动输入服务器地址
 │   │
 │   └─ Settings Screen（设置页）
 │       ├─ Server Address Input
-│       ├─ Auto Discover（UDP 广播发现）
 │       ├─ Test Connection（/ping 测试）
 │       ├─ Switches
 │       │   ├─ Show Debug Info
@@ -462,11 +428,7 @@ CamFlow (Android App)
 │       ├─ 连接失败 → 切换为 Error 状态
 │       └─ UI 提示
 │
-├─ [E] Discovery & Connectivity Layer（发现与连通层）
-│   │
-│   ├─ UDP Auto Discovery
-│   │   ├─ 发送 "FIND_PHONECAM_SERVER"
-│   │   └─ 接收 "PHONECAM_SERVER http://ip:port"
+├─ [E] Connectivity Layer（连通层）
 │   │
 │   ├─ Manual Address Input
 │   │   └─ 支持 IP 或 IP:Port 输入
@@ -593,56 +555,27 @@ curl -v "http://<PC_IP>:<PORT>/stream" \
 
 ---
 
-#### 4.2.5. UDP 自动发现协议
+#### 4.2.5. 手动地址配置
 
-CamFlow 支持在同一局域网内自动发现 Sentinel 服务器地址，以降低首次部署复杂度。
+CamFlow 默认不进行 UDP 广播或局域网扫描。PC 端启动时会输出可直接填入 App 的地址：
 
----
-
-**协议参数**
-
-- Transport：UDP
-- Discovery Port：`37020`（服务器端监听端口）
-- Server Bind：`0.0.0.0:37020`（监听所有网卡）
-
----
-
-**客户端广播请求**
-
-CamFlow 向局域网广播 UTF-8 文本报文：`FIND_PHONECAM_SERVER`
-
----
-
-**服务器响应**
-
-当服务器收到请求后，会向请求来源地址进行 UDP 单播回复（`sendto(..., addr)`），响应格式为：`PHONECAM_SERVER http://<PC_IP>:<PORT>`
-
-其中：
-- `<PORT>` 为服务器 HTTP 服务端口（即 CamFlow 后续用于访问 `/ping`、`/upload`、`/stream` 的端口）。
-- `<PC_IP>` 由服务器根据请求来源 IP 推断得出：实现中通过 `_get_local_ip_for_peer(addr[0])` 选择与客户端同网段更可能可达的本机出口 IP，以降低多网卡场景下返回“不可达地址”的概率。
-
----
-
-**协议交互流程**
-
+```text
+CamFlow:    192.168.1.10:8000    enter this address manually in the app
 ```
-CamFlow (Android)
-    │
-    │ UDP Broadcast to 255.255.255.255:37020
-    │ Payload: "FIND_PHONECAM_SERVER"
-    ▼
-Sentinel PC (UDP listener on port 37020)
-    │
-    │ UDP Unicast Response to sender
-    │ Payload: "PHONECAM_SERVER http://<IP>:<PORT>"
-    ▼
-CamFlow
-    │
-    │ Parse Base URL
-    │ → Execute GET /ping
-    │ → If OK, start POST /upload loop
---------
+
+连接流程：
+
+```text
+运行 server.py
+    → 复制 `CamFlow:` 后的 IP:PORT
+    → 首次启动弹窗或设置页中填入
+    → GET /ping 测试连接
+    → 保存地址
+    → POST /upload 上传图像
 ```
+
+若 PC 的局域网 IP 变化，CamFlow 会在下次启动时发现已保存地址不可达，并重新提示手动输入。
+
 ---
 
 <a id="sec5"></a>
@@ -654,9 +587,10 @@ CamFlow
 ### 5.1. 系统版本信息 [⌃](#top)
 
 本系统由 PC 端服务器程序与 Android 端 CamFlow 应用组成，版本信息如下：
-- CamFlow（Android）版本：v1.1.0
-- 本文档版本：v1.0.0
-- 最后更新日期：2026-03-23
+- CamFlow（Android 源码）版本：v1.1.1
+- 仓库内安装包版本：v1.1.1（debug-signed）
+- 本文档版本：v1.1.1
+- 最后更新日期：2026-08-20
 
 ---
 

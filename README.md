@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.3-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,7 +12,9 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
-🚀 Latest Update (ongoing): [v1.1.2 — 2026-06-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 Latest Update (ongoing): [v1.1.3 — 2026-08-20](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+
+This maintenance update makes first-time CamFlow setup use the address printed by `server.py`, centralizes runtime version metadata, adds Windows-compatible recording codec fallback, redacts API keys in configuration logs, protects upload size, and improves Android address validation and upload diagnostics with expanded tests.
 
 ---
 
@@ -118,7 +120,7 @@ Sentinel is not designed as a single-purpose monitoring tool. Instead, it aims t
 - **Standardized image frame upload interface (HTTP POST)**  
   The Android client continuously uploads single-frame JPEG images; the interface is clear and extensible.
 
-- **Segmented local video recording (MP4) and real-time screenshots**  
+- **Segmented local video recording (MP4 / AVI) and real-time screenshots**
   Supports time-based segmentation for writing video/image files, suitable for long-term operation and archival management.
 
 </td>
@@ -130,8 +132,8 @@ Sentinel is not designed as a single-purpose monitoring tool. Instead, it aims t
 - **Structured multimodal visual cognition**  
   After trigger conditions are met, a vision model is called for semantic analysis and structured outputs, supporting risk grading and event management.
 
-- **UDP-based automatic server discovery**  
-  The Android client can automatically discover the server address within the LAN, reducing manual configuration.
+- **Explicit and verifiable manual connection setup**
+  The PC prints the CamFlow address at startup, while the Android client validates it and provides a `/ping` connection test.
 
 - **Structured logging and configuration management**  
   Generates local runtime logs and AI event records to support traceability and data analysis.
@@ -375,16 +377,18 @@ CamFlow transforms an ordinary smartphone into a real-time camera endpoint and:
 
 #### ① Real-time Image Capture and Upload
 
-- Invokes the device’s native camera
+- Invokes the device's native camera
 - Continuously uploads frames in single JPEG format
 - Supports customizable upload frame rate and image quality (code-level interface)
+- Uses one in-flight upload with status counters to prevent request buildup on weak networks
 
 ---
 
-#### ② Automatic Discovery and Connection
+#### ② Manual Configuration and Connection
 
-- Supports UDP-based automatic server discovery or manual input
-- Provides real-time debugging information
+- Prints a copy-ready `IP:PORT` for CamFlow when PC-side `server.py` starts
+- Requests this address on first launch and tests the saved connection on subsequent launches
+- Validates IP, port, and HTTP/HTTPS addresses and provides real-time diagnostics
 - Allows specifying a particular device camera (code-level interface)
 
 ---
@@ -404,9 +408,7 @@ enabling the construction of a real-time vision system without additional hardwa
 
 <td width="45%" align="center">
 
-<img src="assets/app_main_page.jpg" width="32%">
-<img src="assets/app_setting_page.jpg" width="32%">
-<img src="assets/app_failed_hint.jpg" width="32%">
+<img src="assets/app_main_page.jpg" width="40%">
 
 <br>
 <b>Figure 6 - CamFlow Application Interface</b>
@@ -447,6 +449,7 @@ Sentinel/
 ├── README.md                     # Project documentation
 ├── CamFlow_UserGuide.md          # Android user guide
 ├── requirements.txt              # Dependency installation list
+├── version.properties            # Shared version metadata for PC, Android, and documentation
 ├── .gitignore                    # Git ignore rules
 ├── LICENSE                       # MIT License
 │
@@ -474,7 +477,7 @@ Sentinel/
 │   │   └── __init__.py
 │   │
 │   ├── net/                      # Networking modules
-│   │   ├── net_discovery.py      # UDP auto-discovery service
+│   │   ├── net_discovery.py      # Retained experimental LAN module (not enabled by the default workflow)
 │   │   └── __init__.py
 │   │
 │   ├── recorder/                 # Video recording module
@@ -491,8 +494,7 @@ Sentinel/
 │       │   └── style.css
 │       │
 │       └── templates/            # HTML templates
-│           ├── dashboard.html
-│           └── dashboard.txt
+│           └── dashboard.html
 │
 ├── PhoneCamSender/               # Android client source code (Android Studio project)
 │   ├── app/                      # Android application module
@@ -500,7 +502,8 @@ Sentinel/
 │   ├── build.gradle
 │   ├── settings.gradle
 │   └── ...
-│   └── CamFlow-v1.0.0-beta.apk   # Precompiled APK
+│   ├── CamFlow-v1.1.1.apk        # Current verified installation package (debug-signed)
+│   └── CamFlow-v1.1.0.apk        # Retained legacy installation package
 │
 ├── assets/                       # Images used in README
 │   ├── app_main_page.jpg
@@ -594,8 +597,10 @@ PhoneCamSender/
 The precompiled APK file is located at:
 
 ```
-PhoneCamSender/CamFlow-v1.0.0-beta.apk
+PhoneCamSender/CamFlow-v1.1.1.apk
 ```
+
+> The current bundled package is CamFlow v1.1.1 (debug-signed), SHA-256: `575CCBFDD37E8931A81329794953D76202269FD5D4D82FA08E265784BB2985EB`. The v1.1.0 package is retained only as a legacy build.
 
 #### 3.4.1. Quick Installation via APK (Recommended)
 
@@ -683,15 +688,15 @@ At this point, the PC-side service has started successfully.
 
 #### 4.2.2. Connection Methods
 
-- **Automatic Discovery**: CamFlow supports attempting to discover the server within the LAN. If discovery is successful, the recognized Server Address will be displayed on the app’s settings page or main page.
-
-- **Manual Entry**: If automatic discovery fails, manually enter the Server Address.
-
-In CamFlow settings, enter the LAN IP address printed when running `server.py` on the PC:
+- CamFlow now uses manual address configuration and does not attempt automatic server discovery.
+- On first launch, the app prompts for the Sentinel server address.
+- Run `server.py` on the PC and enter the address shown after `CamFlow:` in its startup output:
 
 ```
-<LAN_IP> or <LAN_IP>:<PORT>             # Extract from http://<LAN_IP>:<PORT>/
+CamFlow:    192.168.1.10:8000
 ```
+
+You can change the address later in Settings. Use `Test connection` first, then select `Save` after the connection succeeds.
 
 #### 4.2.3. Start Uploading (Push Frames)
 
@@ -769,7 +774,7 @@ Below Live View, there are three buttons. All are OFF by default:
 2. **Start / Stop Recording**
    - Function: controls whether the recording thread writes FrameBuffer data into segmented video files;
    - Feature: recording and preview functions are independent. Recording only requires `Ingest` to be ON;
-   - Output path structure: `recordings/videos/YYYYMMDD/<cam_name>_YYYYMMDD_HHMMSS.mp4`, configurable in Settings;
+   - Output path structure: `recordings/videos/YYYYMMDD/<cam_name>_YYYYMMDD_HHMMSS.mp4`; XVID/MJPG fallback files use `.avi`;
    - Usage: click to toggle `Recording` ON/OFF.
 
 3. **Snapshot**
@@ -844,7 +849,7 @@ The table below explains configuration options available in the Dashboard.
 | **Segment Secs** | Number (seconds) | Controls video segmentation duration | Recommended 60–3600. Too large creates huge files; too small creates many fragments. |
 | **Output Root** | String (file path) | Video and snapshot output directory | Recommended default `recordings`; avoid system root directories or unauthorized paths. |
 | **Cam Name** | String (identifier) | Camera identifier written into filenames | Recommended simple identifiers (e.g., `phone1`); avoid spaces or special characters. |
-| **Codec** | String (FourCC) | Video encoding format, e.g., `avc1` / `mp4v` / `XVID` | Recommended `avc1` or `XVID` (better compatibility). Encoder support varies by system; switch if recording fails. |
+| **Codec** | String (FourCC) | Video encoding format: `mp4v` / `XVID` / `MJPG` / `avc1` | `mp4v` is the recommended Windows default. The recorder falls back to XVID/MJPG if needed. `avc1` requires an H.264/OpenH264 library compatible with the installed OpenCV build. |
 | **Autosave** | Boolean (true / false) | Whether to automatically write to `config.json` after clicking Apply | Recommended enabled during development; disable during frequent experimentation to avoid overwriting configurations. |
 
 ---
@@ -1541,6 +1546,11 @@ Automated tests have been added for this module, covering:
 - Dashboard Provider configuration fields and Model Info container rendering;
 - `/api/config` generic Provider updates taking effect in `/api/ai/status`;
 - a complete request chain against a local fake OpenAI-compatible vision service.
+- image upload enablement, decode failures, and the 8 MB limit;
+- recorder codec-open failures, automatic fallback, and reuse of the working codec;
+- configuration logs not exposing real API keys;
+- Android server-address normalization and invalid-address rejection.
+- version consistency across the Dashboard, version API, Gradle, and both READMEs.
 
 Run tests:
 
@@ -1551,7 +1561,14 @@ python -m pytest -q
 Current verification result:
 
 ```text
-12 passed
+18 passed
+```
+
+Run Android unit tests with:
+
+```powershell
+cd PhoneCamSender
+.\gradlew.bat testDebugUnitTest
 ```
 
 The local fake model service test verifies that:
@@ -1574,10 +1591,13 @@ The local fake model service test verifies that:
 The Sentinel system consists of **PC-side service program + Web Dashboard + Android CamFlow client**.  
 The current version information is as follows:
 
-- **Sentinel (PC + Dashboard) Version**: v1.1.2
-- **CamFlow (Android) Version**: v1.1.0
-- **Documentation Version**: v1.1.2
-- **Last Updated**: 2026-06-26
+- **Sentinel (PC + Dashboard) Version**: v1.1.3
+- **CamFlow (Android source) Version**: v1.1.1
+- **Bundled CamFlow APK Version**: v1.1.1 (debug-signed)
+- **Documentation Version**: v1.1.3
+- **Last Updated**: 2026-08-20
+
+All runtime versions are defined once in the root `version.properties`. The PC loads it through `app/version.py` for the Dashboard footer, startup output, and `/api/version`; the Android Gradle build and settings page read the same file instead of keeping separate hardcoded versions. The file also records the current APK path and SHA-256, and automated tests verify that the package matches both READMEs.
 
 ---
 

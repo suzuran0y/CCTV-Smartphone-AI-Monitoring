@@ -194,7 +194,7 @@ async function refreshStatusOnly() {
       <div class="status-item"><span class="status-k">Record FPS / Segment</span><div class="status-v">${st.json.record_fps} / ${st.json.segment_seconds}s</div></div>
 
       <div class="status-item"><span class="status-k">Output Root</span><div class="status-v">${st.json.out_root || "—"}</div></div>
-      <div class="status-item"><span class="status-k">Cam / Codec</span><div class="status-v">${st.json.cam_name || "—"} / ${st.json.codec || "—"}</div></div>
+      <div class="status-item"><span class="status-k">Cam / Codec</span><div class="status-v">${st.json.cam_name || "—"} / ${st.json.recording_codec || st.json.codec || "—"}</div></div>
 
       <div class="status-item" style="grid-column:1/-1;"><span class="status-k">Recording file</span><div class="status-v" style="font-weight:600;">${recFile}</div></div>
       <div class="status-item"><span class="status-k">Rec elapsed</span><div class="status-v">${recElapsed}</div></div>

@@ -12,6 +12,7 @@ class UploadStats:
     ok_count: int = 0
     bad_missing_count: int = 0
     bad_decode_count: int = 0
+    bad_too_large_count: int = 0
     rejected_ingest_count: int = 0
 
     upload_ts_lock: threading.Lock = field(default_factory=threading.Lock)
@@ -31,6 +32,10 @@ class UploadStats:
         with self.lock:
             self.bad_decode_count += 1
 
+    def mark_too_large(self) -> None:
+        with self.lock:
+            self.bad_too_large_count += 1
+
     def mark_rejected(self) -> None:
         with self.lock:
             self.rejected_ingest_count += 1
@@ -41,6 +46,7 @@ class UploadStats:
                 "200_ok": self.ok_count,
                 "400_missing_image": self.bad_missing_count,
                 "400_decode_failed": self.bad_decode_count,
+                "413_image_too_large": self.bad_too_large_count,
                 "503_ingest_disabled": self.rejected_ingest_count,
             }
 

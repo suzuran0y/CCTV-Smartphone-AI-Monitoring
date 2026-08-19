@@ -11,6 +11,19 @@ from flask import Flask, request, Response, jsonify, render_template
 from app.config.config_store import validate_and_normalize
 from app.ai.vision_client import safe_provider_info
 from app.recorder.recorder_worker import stop_recorder
+from app.version import RELEASE_DATE, SENTINEL_VERSION, version_info
+
+MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+SENSITIVE_CONFIG_KEYS = {"ai_api_key", "ark_api_key"}
+
+
+def _redact_config_patch(patch: dict) -> dict:
+    """Return a log-safe config patch without exposing provider credentials."""
+    return {
+        key: "******" if key in SENSITIVE_CONFIG_KEYS and value else value
+        for key, value in patch.items()
+    }
+
 
 def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, stop_event, threads, server_log_path: str) -> Flask:
     """
@@ -25,10 +38,20 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
     static_dir = os.path.join(base_dir, "static")
 
     app = Flask(__name__, template_folder=templates_dir, static_folder=static_dir)
+    # Leave room for multipart metadata while enforcing an explicit image limit below.
+    app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES + 1024 * 1024
 
     # Disable Werkzeug access logs (keep your original behavior)
     import logging as _logging
     _logging.getLogger("werkzeug").disabled = True
+
+    @app.errorhandler(413)
+    def request_too_large(_):
+        if request.path == "/upload":
+            stats.mark_too_large()
+            logger.warning("413 upload request too large")
+            return "image too large", 413
+        return "request too large", 413
 
     @app.get("/ping")
     def ping():
@@ -47,7 +70,12 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             logger.warning("400 missing image field")
             return "missing image", 400
 
-        data = f.read()
+        data = f.stream.read(MAX_UPLOAD_BYTES + 1)
+        if len(data) > MAX_UPLOAD_BYTES:
+            stats.mark_too_large()
+            logger.warning(f"413 image too large bytes>{MAX_UPLOAD_BYTES}")
+            return "image too large", 413
+
         img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
         if img is None:
             stats.mark_decode_failed()
@@ -93,7 +121,15 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
     @app.get("/")
     @app.get("/dashboard")
     def dashboard():
-        return render_template("dashboard.html")
+        return render_template(
+            "dashboard.html",
+            sentinel_version=SENTINEL_VERSION,
+            release_date=RELEASE_DATE,
+        )
+
+    @app.get("/api/version")
+    def api_version():
+        return jsonify({"ok": True, "data": version_info()})
 
     @app.get("/api/config")
     def api_get_config():
@@ -140,7 +176,7 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         if bool(new_cfg.get("recording")) and changed_record_params:
             note = "Recording is ON. Some record params will fully apply after Stop+Start recording."
 
-        logger.info(f"config updated: {cleaned}")
+        logger.info(f"config updated: {_redact_config_patch(cleaned)}")
         return jsonify({"ok": True, "note": note})
 
     @app.post("/api/config/save")
@@ -292,9 +328,11 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         rec_file = None
         seg_remaining = None
         total_elapsed = None
+        recording_codec = None
 
         if r is not None and getattr(r, "current_path", None) and getattr(r, "segment_start_ts", None):
             rec_file = r.current_path
+            recording_codec = getattr(r, "active_codec", None)
             seg_elapsed = time.time() - r.segment_start_ts
             seg_remaining = max(0.0, float(cfg.get("segment_seconds", 60)) - seg_elapsed)
 
@@ -302,6 +340,7 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             total_elapsed = time.time() - recording_start_ts
 
         return jsonify({
+            "sentinel_version": SENTINEL_VERSION,
             "ingest_enabled": bool(cfg.get("ingest_enabled")),
             "recording": bool(cfg.get("recording")),
             "stream_fps": int(cfg.get("stream_fps")),
@@ -316,6 +355,7 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
 
             "recorder_opened": opened,
             "recording_file": rec_file,
+            "recording_codec": recording_codec,
             "recording_elapsed_sec": None if total_elapsed is None else round(total_elapsed, 1),
             "segment_remaining_sec": None if seg_remaining is None else round(seg_remaining, 1),
 

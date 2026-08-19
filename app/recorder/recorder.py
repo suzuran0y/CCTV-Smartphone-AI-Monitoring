@@ -6,6 +6,16 @@ from datetime import datetime
 import cv2
 
 
+CODEC_EXTENSIONS = {
+    "avc1": ".mp4",
+    "H264": ".mp4",
+    "mp4v": ".mp4",
+    "XVID": ".avi",
+    "MJPG": ".avi",
+}
+SAFE_FALLBACK_CODECS = ("mp4v", "XVID", "MJPG")
+
+
 class SegmentRecorder:
     """
     Continuously writes video and rotates files by fixed duration.
@@ -14,11 +24,12 @@ class SegmentRecorder:
       recordings/videos/YYYYMMDD/phone1_YYYYMMDD_HHMMSS.mp4
     """
     def __init__(self, out_root: str = "recordings", fps: int = 10, segment_seconds: int = 60,
-                 codec: str = "avc1", cam_name: str = "cam1"):
+                 codec: str = "mp4v", cam_name: str = "cam1"):
         self.out_root = out_root
         self.fps = fps
         self.segment_seconds = segment_seconds
-        self.fourcc = cv2.VideoWriter_fourcc(*codec)
+        self.requested_codec = codec
+        self.active_codec = None
         self.cam_name = cam_name
 
         self.writer = None
@@ -26,21 +37,62 @@ class SegmentRecorder:
         self.current_path = None
         os.makedirs(self.out_root, exist_ok=True)
 
-    def _make_path(self) -> str:
+    def _codec_candidates(self):
+        primary = self.active_codec or self.requested_codec
+        candidates = [primary, *SAFE_FALLBACK_CODECS]
+        return list(dict.fromkeys(candidates))
+
+    def _make_path(self, codec: str) -> str:
         now = datetime.now()
         day_dir = os.path.join(self.out_root, now.strftime("%Y%m%d"))
         os.makedirs(day_dir, exist_ok=True)
-        fname = f"{self.cam_name}_{now.strftime('%Y%m%d_%H%M%S')}.mp4"
-        return os.path.join(day_dir, fname)
+        extension = CODEC_EXTENSIONS.get(codec, ".mp4")
+        stem = f"{self.cam_name}_{now.strftime('%Y%m%d_%H%M%S')}"
+        path = os.path.join(day_dir, f"{stem}{extension}")
+        suffix = 1
+        while os.path.exists(path):
+            path = os.path.join(day_dir, f"{stem}_{suffix:03d}{extension}")
+            suffix += 1
+        return path
 
     def _open_writer(self, frame_w: int, frame_h: int) -> str:
-        self.current_path = self._make_path()
-        self.writer = cv2.VideoWriter(self.current_path, self.fourcc, self.fps, (frame_w, frame_h))
-        self.segment_start_ts = time.time()
-        if not self.writer.isOpened():
-            self.writer = None
-            raise RuntimeError("VideoWriter open failed. Try codec='XVID' + .avi, or install codecs.")
-        return self.current_path
+        failures = []
+        for codec in self._codec_candidates():
+            if len(codec) != 4:
+                failures.append(f"{codec!r}: FourCC must contain exactly 4 characters")
+                continue
+
+            path = self._make_path(codec)
+            writer = None
+            try:
+                fourcc = cv2.VideoWriter_fourcc(*codec)
+                writer = cv2.VideoWriter(path, fourcc, self.fps, (frame_w, frame_h))
+                if writer.isOpened():
+                    self.writer = writer
+                    self.current_path = path
+                    self.segment_start_ts = time.time()
+                    previous_codec = self.active_codec or self.requested_codec
+                    self.active_codec = codec
+                    if codec != previous_codec:
+                        print(f"[REC] codec fallback {previous_codec} -> {codec}")
+                    return path
+                failures.append(f"{codec}: writer did not open")
+            except Exception as exc:
+                failures.append(f"{codec}: {exc}")
+            finally:
+                if writer is not None and writer is not self.writer:
+                    writer.release()
+                if writer is not self.writer and os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except OSError:
+                        pass
+
+        self.writer = None
+        self.current_path = None
+        self.segment_start_ts = None
+        detail = "; ".join(failures)
+        raise RuntimeError(f"VideoWriter open failed for all codecs ({detail})")
 
     def _close_writer(self) -> None:
         if self.writer is not None:

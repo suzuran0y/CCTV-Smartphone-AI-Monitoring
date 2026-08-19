@@ -12,6 +12,7 @@ from app.recorder.recorder_worker import start_record_thread
 from app.ai.ai_store import AiRuntime, EventStore
 from app.ai.ai_monitor_worker import start_ai_monitor_thread
 from app.web.webapp import create_app
+from app.version import SENTINEL_VERSION
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(BASE_DIR, "log")
@@ -39,6 +40,8 @@ def get_local_ip() -> str:
 def main():
     logger = setup_logger(SERVER_LOG_PATH)
     stop_event = threading.Event()
+    host = "0.0.0.0"
+    port = 8000
 
     cfg_store = ConfigStore(path=CONFIG_PATH, initial=DEFAULT_CONFIG.copy())
     frame_buf = FrameBuffer()
@@ -78,17 +81,16 @@ def main():
         server_log_path=SERVER_LOG_PATH,
     )
 
-    host = "0.0.0.0"
-    port = 8000
     local_ip = get_local_ip()
 
     url_lan = f"http://{local_ip}:{port}/"
     url_local = f"http://127.0.0.1:{port}/"
 
     print("\n====================================================================")
-    print(" PhoneCam Server Started")
-    print(f" Local:      {url_local}            for dashboard web")
-    print(f" LAN:        {url_lan}       for CamFlow link")
+    print(f" Sentinel v{SENTINEL_VERSION} Server Started")
+    print(f" Dashboard:  {url_local}            open on this PC")
+    print(f" LAN Web:    {url_lan}       open from other devices")
+    print(f" CamFlow:    {local_ip}:{port}              enter this address manually in the app")
     print(" Default ingest: OFF (enable in dashboard)")
     print("====================================================================\n", flush=True)
 

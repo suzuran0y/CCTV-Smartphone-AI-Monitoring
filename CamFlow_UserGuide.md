@@ -3,7 +3,7 @@
 
 # CamFlow User Guide
 
-[![Version](https://img.shields.io/badge/version-v1.1.0-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.1-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 [![Role](https://img.shields.io/badge/role-Client-blue)](README.md)
 [![Protocol](https://img.shields.io/badge/protocol-HTTP%20Upload-orange)](#sec42)
@@ -82,7 +82,7 @@ CamFlow and the PC server together form the complete Sentinel system:
 #### Engineering Focus
 
 - Distributed video data acquisition architecture  
-- LAN-based automatic server discovery  
+- Manual LAN server configuration and connection verification
 - Lightweight image frame upload protocol  
 - Client runtime state management  
 
@@ -130,10 +130,10 @@ CamFlow provides the following core functionalities:
 
 ---
 
-#### 2. Automatic Server Discovery
+#### 2. Server Address Configuration
 
-- Attempt to discover available Sentinel PC servers via UDP broadcast within the local network (LAN);
-- If discovery fails, automatically fall back to manual server address input.
+- Print a copy-ready CamFlow `IP:PORT` when PC-side `server.py` starts;
+- Request and save this address on first use, then test the saved address on subsequent launches.
 
 ---
 
@@ -167,7 +167,7 @@ CamFlow provides the following core functionalities:
 
 > Intended for end users / deployment operators.
 
-1. Download `CamFlow-v1.0.0-beta.apk` from the project's **Releases** page on GitHub (to be provided upon release).
+1. Use the verified bundled `CamFlow-v1.1.1.apk` (debug-signed), or download an APK from the project's **Releases** page on GitHub.
 2. Install and open CamFlow on your Android device.
 3. On first launch, grant camera permission when prompted.
 
@@ -200,14 +200,6 @@ If the server has not yet been connected, the application will typically display
       <img src="assets/app_main_page.jpg" width="250"><br>
       <b>Figure 1 - Main Interface (Not Connected)</b><br>
     </td>
-    <td align="center">
-      <img src="assets/app_failed_hint.jpg" width="250"><br>
-      <b>Figure 2 - Auto Discovery Failure Prompt</b><br>
-    </td>
-    <td align="center">
-      <img src="assets/app_setting_page.jpg" width="250"><br>
-      <b>Figure 3 - Settings Page</b><br>
-    </td>
   </tr>
 </table>
 
@@ -218,11 +210,10 @@ If the server has not yet been connected, the application will typically display
 | Field | Possible States | Meaning | Trigger Scenario |
 |-------|------------------|---------|------------------|
 | **Status** | Not connected | No valid server connection established | First launch / server not configured |
-| | Discovering server... | Performing LAN auto discovery | After clicking Auto discover |
 | | Connecting... | Attempting to connect to server | After manual address input |
 | | Connected | Successfully connected and verified | `/ping` returned success |
 | **Server** | Not connected | No available server address | Not configured / connection failed |
-| | xxx.xxx.xxx.xxx(:xxxx) | Recognized / saved server IP (and port) | Auto discovery success / manual input |
+| | xxx.xxx.xxx.xxx(:xxxx) | Saved server IP (and port) | Manual input and successful connection |
 | **Mode** | Normal | Capturing and uploading normally with preview shown | Default mode |
 | | Hidden Preview | Preview hidden but still uploading | Hide camera preview enabled |
 | | Stopped | Capture and upload stopped | Stop camera enabled |
@@ -235,34 +226,14 @@ If the server has not yet been connected, the application will typically display
 
 ### 2.2. Connecting to Server [⌃](#top)
 
-#### 2.2.1. Auto Discovery
+#### 2.2.1. Manual Input
 
-If CamFlow does not have a configured server address, it will attempt to automatically discover a Sentinel server within the local network.
-
-During this process, the status will display: `Discovering server...`
-
-
-If discovery succeeds:
-
-- CamFlow will automatically populate the server address;
-- The application will enter a connectable / upload-ready state.
-
-Depending on the network environment, the app may:
-- Connect directly, or  
-- Require user confirmation to save the discovered address.
-
----
-
-#### 2.2.2. Manual Input
-
-If automatic discovery fails, CamFlow will display a prompt dialog (see Figure 2) requesting manual server input.
+On first launch, CamFlow displays a prompt requesting the Sentinel server address. Start `server.py` on the PC first, then enter the address shown after `CamFlow:` in its startup output.
 
 Prompt explanation and input format:
 
-- **Connection failed / Could not find the server automatically**
-  - Indicates that no UDP discovery response was received.
-
-- **Enter IP address**
+- **Enter Sentinel server address**
+  - Enter the CamFlow address printed by `server.py`.
   - Input the server IP address.
   - If using a non-default port, append the port number.
 
@@ -286,7 +257,7 @@ Format examples:
 
 ### 2.3. Settings Page [⌃](#top)
 
-Tap the **top-right corner** of the main interface to enter the Settings page (see Figure 3).  
+Tap the **top-right corner** of the main interface to enter the Settings page.
 Here you can configure the server address, test connectivity, and control runtime switches.
 
 ---
@@ -301,7 +272,6 @@ Here you can configure the server address, test connectivity, and control runtim
 
 | Button | Trigger | Result | Description |
 |--------|--------|--------|-------------|
-| Auto discover | Click | Trigger one discovery process | Broadcast within LAN to search for available server |
 | Test connection | Click | Success / Failure | Send a reachability test request to server (typically `/ping`) |
 | Save | Click | Save successful | Save current server address and settings |
 
@@ -338,14 +308,13 @@ Before using CamFlow, ensure the following conditions are met:
 2. Upon successful startup, the terminal will output the server IP address in the form:  `<PC_IP>:<PORT>`;
 3. On the phone browser, access:  `http://<PC_IP>:<PORT>/ping`; If the response is `OK`, the server is running correctly;
 4. Ensure the phone and PC are connected to the **same Wi-Fi network**;
-5. Open CamFlow and wait for automatic discovery;
-6. If discovery succeeds, the server address will be auto-filled and connection established;
-7. If discovery fails, manually enter the IP address in the popup dialog;
-8. Verify that `Status` changes to `Connected`;
-9. Once connected, tap the top-right corner to enter the Settings page if configuration adjustments are needed;
-10. Open the PC-side Dashboard using: `http://<PC_IP>:<PORT>/`; 
-11. Click the `Enable Ingest` button to allow the server to receive frames;
-12. Once the **Live View** window updates with the camera feed, CamFlow is successfully running.
+5. Open CamFlow and enter the `IP:PORT` printed after `CamFlow:` in the PC terminal;
+6. Select **Connect**, or use **Test connection** in Settings before saving;
+7. Verify that `Status` changes to `Connected`;
+8. Once connected, tap the top-right corner to enter the Settings page if configuration adjustments are needed;
+9. Open the PC-side Dashboard using: `http://<PC_IP>:<PORT>/`;
+10. Click the `Enable Ingest` button to allow the server to receive frames;
+11. Once the **Live View** window updates with the camera feed, CamFlow is successfully running.
 
 ---
 
@@ -357,32 +326,12 @@ At this point, the CamFlow service and its data transmission to the PC server ar
 
 <details>
 
-<summary><strong>Auto discovery failed (Cannot find server automatically)</strong></summary>
+<summary><strong>Which address should I enter on first use?</strong></summary>
 
-- Status displays `Discovering server...` and eventually fails;
-- A popup appears: “Could not find the server automatically”.
-
-### Possible Causes
-
-1. The phone and PC are not on the same LAN.
-2. The router has AP isolation enabled, preventing device-to-device communication.
-3. Network policies or device restrictions block UDP broadcast.
-4. The PC server is not running the discovery responder or the UDP port is blocked.
-
-### Troubleshooting Steps
-
-1. On the phone browser, visit: `http://<PC_IP>:<PORT>/ping`
-
-- If accessible → TCP connectivity is normal. Use manual input instead.
-- If not accessible → Check firewall, port configuration, or network isolation.
-
-2. Try manually entering `PC_IP:PORT` in the app and click **Test connection**.
-
-### Solutions
-
-- Use **Manual Input** as a stable alternative;
-- Disable AP isolation on the router;
-- Allow the required TCP port (e.g., 8000) and UDP discovery port in the PC firewall.
+1. Run `python server.py` on the PC.
+2. Find `CamFlow: <PC_IP>:8000` in the terminal output.
+3. Enter `<PC_IP>:8000` in the app and select **Connect**, or use **Test connection** in Settings first.
+4. If it fails, visit `http://<PC_IP>:8000/ping` in the phone browser and check the PC firewall, same-Wi-Fi connection, and AP isolation settings.
 
 </details>
 
@@ -411,7 +360,7 @@ At this point, the CamFlow service and its data transmission to the PC server ar
 ### Solutions
 
 - Correct the IP/port;
-- Allow the configured TCP port (and UDP discovery port if used) in the PC firewall.
+- Allow the configured HTTP port (TCP 8000 by default) in the PC firewall.
 
 </details>
 
@@ -484,17 +433,16 @@ CamFlow (Android App)
 │   ├─ Main Screen
 │   │   ├─ Camera Preview (Live preview)
 │   │   ├─ Status Header
-│   │   │   ├─ Status ∈ {NotConnected, Discovering, Connecting, Connected}
+│   │   │   ├─ Status ∈ {NotConnected, Connecting, Connected}
 │   │   │   ├─ Server (Current server address)
 │   │   │   ├─ Mode ∈ {Normal, HiddenPreview, Stopped}
 │   │   │   └─ Interval (Upload interval in ms)
 │   │   │
 │   │   └─ Connection Dialog
-│   │       └─ Auto discovery failure → Manual server input
+│   │       └─ First launch / invalid saved address → Manual server input
 │   │
 │   └─ Settings Screen
 │       ├─ Server Address Input
-│       ├─ Auto Discover (UDP broadcast discovery)
 │       ├─ Test Connection (/ping test)
 │       ├─ Switches
 │       │   ├─ Show Debug Info
@@ -550,11 +498,7 @@ CamFlow (Android App)
 │       ├─ Connection failure → Switch to Error state
 │       └─ UI feedback update
 │
-├─ [E] Discovery & Connectivity Layer
-│   │
-│   ├─ UDP Auto Discovery
-│   │   ├─ Send "FIND_PHONECAM_SERVER"
-│   │   └─ Receive "PHONECAM_SERVER http://ip:port"
+├─ [E] Connectivity Layer
 │   │
 │   ├─ Manual Address Input
 │   │   └─ Support IP or IP:Port format
@@ -690,55 +634,26 @@ curl -v "http://<PC_IP>:<PORT>/stream"
 ```
 ---
 
-#### 4.2.5. UDP Auto Discovery Protocol
+#### 4.2.5. Manual Address Configuration
 
-CamFlow supports automatic server discovery within the same local network to simplify first-time deployment.
+CamFlow does not perform UDP broadcasts or LAN scans in the default workflow. The PC prints a copy-ready address when it starts:
 
-**Protocol Parameters**
-
-- Transport: UDP
-- Discovery Port: `37020`
-- Server Bind Address: `0.0.0.0:37020` (listen on all network interfaces)
-
----
-
-**Client Broadcast Request**
-
-CamFlow sends a UTF-8 text broadcast packet: `FIND_PHONECAM_SERVER`
-
----
-
-**Server Response**
-
-When the server receives the broadcast request, it replies via UDP unicast: `PHONECAM_SERVER http://<PC_IP>:<PORT>`
-
-Where:
-
-- `<PORT>` is the HTTP service port (used for `/ping`, `/upload`, `/stream`);
-- `<PC_IP>` is inferred based on the sender’s IP address to increase reachability in multi-network-interface environments.
-
----
-
-**Protocol Interaction Flow**
-
-```bash
-CamFlow (Android)
-    │
-    │ UDP Broadcast → 255.255.255.255:37020
-    │ Payload: "FIND_PHONECAM_SERVER"
-    ▼
-Sentinel PC (UDP listener on port 37020)
-    │
-    │ UDP Unicast Response → sender
-    │ Payload: "PHONECAM_SERVER http://<IP>:<PORT>"
-    ▼
-CamFlow
-    │
-    │ Parse Base URL
-    │ → Execute GET /ping
-    │ → If OK, start POST /upload loop
-    --------
+```text
+CamFlow:    192.168.1.10:8000    enter this address manually in the app
 ```
+
+Connection flow:
+
+```text
+Run server.py
+    → Copy the IP:PORT shown after `CamFlow:`
+    → Enter it in the first-launch prompt or Settings
+    → Test the connection with GET /ping
+    → Save the address
+    → Upload images with POST /upload
+```
+
+If the PC's LAN IP changes, CamFlow will detect that the saved address is unavailable on the next launch and prompt for a new address.
 
 ---
 
@@ -753,9 +668,10 @@ CamFlow
 The Sentinel system consists of the PC-side server program and the Android-side CamFlow application.  
 Current version information:
 
-- **CamFlow (Android) Version**: v1.1.0  
-- **This Document Version**: v1.0.0  
-- **Last Updated**: 2026-03-23
+- **CamFlow (Android source) Version**: v1.1.1
+- **Bundled APK Version**: v1.1.1 (debug-signed)
+- **This Document Version**: v1.1.1
+- **Last Updated**: 2026-08-20
 
 ---
 

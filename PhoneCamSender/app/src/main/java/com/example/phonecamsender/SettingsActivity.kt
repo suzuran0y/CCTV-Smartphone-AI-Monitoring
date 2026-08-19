@@ -6,18 +6,21 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import okhttp3.*
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 class SettingsActivity : AppCompatActivity() {
 
     private val prefs by lazy { getSharedPreferences("phonecam", MODE_PRIVATE) }
-    private val okHttp = OkHttpClient()
+    private val okHttp = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
         val addrInput = findViewById<EditText>(R.id.addrInput)
-        val btnDiscover = findViewById<Button>(R.id.btnDiscover)
         val btnTest = findViewById<Button>(R.id.btnTest)
         val btnSave = findViewById<Button>(R.id.btnSave)
         val swDebug = findViewById<Switch>(R.id.switchShowDebug)
@@ -26,6 +29,8 @@ class SettingsActivity : AppCompatActivity() {
         val spinnerQuality = findViewById<Spinner>(R.id.spinnerImageQuality)
         val spinnerUploadRate = findViewById<Spinner>(R.id.spinnerUploadRate)
         val spinnerResolution = findViewById<Spinner>(R.id.spinnerResolution)
+        findViewById<TextView>(R.id.textVersion).text =
+            getString(R.string.camflow_version_format, BuildConfig.VERSION_NAME)
 
         swHide.isChecked = prefs.getBoolean("hidePreview", false)
         swStop.isChecked = prefs.getBoolean("stopCamera", false)
@@ -76,22 +81,6 @@ class SettingsActivity : AppCompatActivity() {
 // Initialize the switch status
         swDebug.isChecked = prefs.getBoolean("showDebug", false)
         addrInput.setText(prefs.getString("serverInput", "") ?: "")
-        btnDiscover.setOnClickListener {
-            Toast.makeText(this, "Discovering...", Toast.LENGTH_SHORT).show()
-            NetworkDiscover.discoverServer(
-                onFound = { baseUrl ->
-                    runOnUiThread {
-                        addrInput.setText(NetworkDiscover.baseUrlToInput(baseUrl))
-                        Toast.makeText(this, "Found: ${addrInput.text}", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onFail = {
-                    runOnUiThread {
-                        Toast.makeText(this, "Discovery failed. Check that both devices are on the same network.", Toast.LENGTH_LONG).show()
-                    }
-                }
-            )
-        }
 
         btnTest.setOnClickListener {
             val input = addrInput.text.toString().trim()
@@ -135,10 +124,15 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun verifyPing(baseUrl: String, cb: (Boolean) -> Unit) {
-        val req = Request.Builder()
-            .url("${baseUrl.removeSuffix("/")}/ping")
-            .get()
-            .build()
+        val req = try {
+            Request.Builder()
+                .url("${baseUrl.removeSuffix("/")}/ping")
+                .get()
+                .build()
+        } catch (_: IllegalArgumentException) {
+            cb(false)
+            return
+        }
 
         okHttp.newCall(req).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) = cb(false)

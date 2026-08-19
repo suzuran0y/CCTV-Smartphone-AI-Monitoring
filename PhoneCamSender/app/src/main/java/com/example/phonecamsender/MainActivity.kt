@@ -13,27 +13,42 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import okhttp3.*
-import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import android.widget.ImageButton
 import android.view.View
-import android.os.Handler
-import android.os.Looper
 
 class MainActivity : AppCompatActivity() {
     private lateinit var blackScreen: View
     private lateinit var previewView: PreviewView
     private lateinit var statusText: TextView
     private val cameraExecutor = Executors.newSingleThreadExecutor()
-    private val okHttp = OkHttpClient()
+    private val okHttp = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .build()
     private val prefs by lazy { getSharedPreferences("phonecam", MODE_PRIVATE) }
     private var baseUrl: String? = null
     private var lastSentTs = 0L
+    private val uploadInFlight = AtomicBoolean(false)
+    private val uploadSuccessCount = AtomicLong(0)
+    private val uploadFailureCount = AtomicLong(0)
+    private val uploadDroppedCount = AtomicLong(0)
+
+    @Volatile
+    private var lastUploadStatus = "Not started"
+
+    @Volatile
+    private var lastUploadLatencyMs = 0L
+
+    @Volatile
+    private var lastCameraError = ""
 
     private var lastAppliedResolutionLabel: String? = null
 
@@ -96,6 +111,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (!camRunningFlag || resolutionChanged) {
+            if (!hasCameraPermission()) {
+                setStatus("Status: Camera permission required")
+                lastAppliedResolutionLabel = currentResolutionLabel
+                return
+            }
             stopCameraEngine()
             startCamera()
             lastAppliedResolutionLabel = currentResolutionLabel
@@ -127,50 +147,33 @@ class MainActivity : AppCompatActivity() {
                 if (ok) {
                     onServerReady(savedBaseUrl)
                 } else {
-                    autoDiscover()
+                    setStatus("Status: Saved server unavailable")
+                    showManualInputDialog()
                 }
             }
         } else {
-            autoDiscover()
+            setStatus("Status: Server address required")
+            showManualInputDialog()
         }
-    }
-
-    private fun autoDiscover() {
-        setStatus("Status: Discovering server...")
-        NetworkDiscover.discoverServer(
-            onFound = { url ->
-                verifyPing(url) { ok ->
-                    if (ok) {
-                        onServerReady(url)
-                    } else {
-                        showManualInputDialog()
-                    }
-                }
-            },
-            onFail = {
-                showManualInputDialog()
-            }
-        )
     }
 
     private fun onServerReady(url: String) {
         baseUrl = url
         prefs.edit().putString("baseUrl", url).apply()
 
-        setStatus("Status: Connected ${NetworkDiscover.baseUrlToInput(url)}")
-
         runOnUiThread {
+            setStatus("Status: Connected ${NetworkDiscover.baseUrlToInput(url)}")
             Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show()
-        }
 
-        if (hasCameraPermission()) {
-            startCamera()
-        } else {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.CAMERA),
-                1001
-            )
+            if (hasCameraPermission()) {
+                if (!camRunningFlag) startCamera()
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.CAMERA),
+                    1001
+                )
+            }
         }
     }
 
@@ -181,12 +184,12 @@ class MainActivity : AppCompatActivity() {
     private fun showManualInputDialog() {
         runOnUiThread {
             val input = android.widget.EditText(this)
-            input.hint = "Enter IP address"
+            input.hint = "e.g. 192.168.1.10:8000"
             input.setText(prefs.getString("serverInput", "") ?: "")
 
             androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Connection failed")
-                .setMessage("Could not find the server automatically. Please enter the address manually.")
+                .setTitle("Enter Sentinel server address")
+                .setMessage("Run server.py on the PC, then enter the CamFlow address shown in its startup output.")
                 .setView(input)
                 .setCancelable(false)
                 .setPositiveButton("Connect") { _, _ ->
@@ -230,10 +233,15 @@ class MainActivity : AppCompatActivity() {
     // ==========================
 
     private fun verifyPing(url: String, callback: (Boolean) -> Unit) {
-        val request = Request.Builder()
-            .url("${url.removeSuffix("/")}/ping")
-            .get()
-            .build()
+        val request = try {
+            Request.Builder()
+                .url("${url.removeSuffix("/")}/ping")
+                .get()
+                .build()
+        } catch (_: IllegalArgumentException) {
+            callback(false)
+            return
+        }
 
         okHttp.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
@@ -279,54 +287,63 @@ class MainActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            camProviderRef = cameraProvider
+            try {
+                val cameraProvider = cameraProviderFuture.get()
+                camProviderRef = cameraProvider
 
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
-
-            val analysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setTargetResolution(getTargetResolutionSize())
-                .build()
-
-            analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-
-                if (powerSaveFlag) {
-                    imageProxy.close()
-                    return@setAnalyzer
+                val preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
-                try {
-                    val now = System.currentTimeMillis()
-                    val uploadIntervalMs = getUploadIntervalMs()
+                val analysis = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setTargetResolution(getTargetResolutionSize())
+                    .build()
 
-                    if (now - lastSentTs >= uploadIntervalMs) {
-                        lastSentTs = now
-                        val jpegQuality = getImageQualityValue()
-                        val jpeg = ImageUtil.yuvToJpeg(imageProxy, jpegQuality)
-                        uploadFrame(jpeg)
+                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+
+                    if (powerSaveFlag) {
+                        imageProxy.close()
+                        return@setAnalyzer
                     }
-                } finally {
-                    imageProxy.close()
+
+                    try {
+                        val now = System.currentTimeMillis()
+                        val uploadIntervalMs = getUploadIntervalMs()
+
+                        if (now - lastSentTs >= uploadIntervalMs) {
+                            lastSentTs = now
+                            val jpegQuality = getImageQualityValue()
+                            val jpeg = ImageUtil.yuvToJpeg(imageProxy, jpegQuality)
+                            uploadFrame(jpeg)
+                        }
+                    } catch (e: Exception) {
+                        lastCameraError = e.javaClass.simpleName
+                    } finally {
+                        imageProxy.close()
+                    }
                 }
-            }
 
-            cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
-                this,
-                CameraSelector.DEFAULT_BACK_CAMERA,
-                preview,
-                analysis
-            )
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    this,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    analysis
+                )
 
-            camRunningFlag = true
-            val url = baseUrl
-            if (url != null) {
-                setStatus("Status: Connected ${NetworkDiscover.baseUrlToInput(url)}")
-            } else {
-                setStatus("Status: Not connected")
+                camRunningFlag = true
+                lastCameraError = ""
+                val url = baseUrl
+                if (url != null) {
+                    setStatus("Status: Connected ${NetworkDiscover.baseUrlToInput(url)}")
+                } else {
+                    setStatus("Status: Not connected")
+                }
+            } catch (e: Exception) {
+                camRunningFlag = false
+                lastCameraError = e.javaClass.simpleName
+                setStatus("Status: Camera unavailable")
             }
 
         }, ContextCompat.getMainExecutor(this))
@@ -334,28 +351,57 @@ class MainActivity : AppCompatActivity() {
 
     private fun uploadFrame(jpegBytes: ByteArray) {
         val url = baseUrl ?: return
+        if (!uploadInFlight.compareAndSet(false, true)) {
+            uploadDroppedCount.incrementAndGet()
+            return
+        }
+
+        val startedAt = System.currentTimeMillis()
         val uploadUrl = "${url.removeSuffix("/")}/upload"
-        val tmpFile = File(cacheDir, "frame.jpg")
-        FileOutputStream(tmpFile).use { it.write(jpegBytes) }
 
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
                 "image",
                 "frame.jpg",
-                tmpFile.asRequestBody("image/jpeg".toMediaType())
+                jpegBytes.toRequestBody("image/jpeg".toMediaType())
             )
             .build()
 
-        val request = Request.Builder()
-            .url(uploadUrl)
-            .post(body)
-            .build()
+        val request = try {
+            Request.Builder()
+                .url(uploadUrl)
+                .post(body)
+                .build()
+        } catch (_: IllegalArgumentException) {
+            uploadFailureCount.incrementAndGet()
+            lastUploadStatus = "Invalid server URL"
+            uploadInFlight.set(false)
+            return
+        }
 
         okHttp.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
+            override fun onFailure(call: Call, e: IOException) {
+                lastUploadLatencyMs = System.currentTimeMillis() - startedAt
+                uploadFailureCount.incrementAndGet()
+                lastUploadStatus = "Failed: ${e.javaClass.simpleName}"
+                uploadInFlight.set(false)
+            }
+
             override fun onResponse(call: Call, response: Response) {
-                response.close()
+                try {
+                    lastUploadLatencyMs = System.currentTimeMillis() - startedAt
+                    if (response.isSuccessful) {
+                        uploadSuccessCount.incrementAndGet()
+                        lastUploadStatus = "OK (${response.code})"
+                    } else {
+                        uploadFailureCount.incrementAndGet()
+                        lastUploadStatus = "HTTP ${response.code}"
+                    }
+                } finally {
+                    response.close()
+                    uploadInFlight.set(false)
+                }
             }
         })
     }
@@ -404,7 +450,13 @@ class MainActivity : AppCompatActivity() {
             else -> "Normal"
         }
 
-        return "Server: $url\nMode: $mode\nResolution: $resolutionText\nUpload rate: $uploadRateLabel (${uploadIntervalMs}ms)\nQuality: $qualityLabel ($qualityValue)"
+        val cameraErrorText = if (lastCameraError.isBlank()) "none" else lastCameraError
+        return "Server: $url\nMode: $mode\nResolution: $resolutionText\n" +
+                "Upload rate: $uploadRateLabel (${uploadIntervalMs}ms)\n" +
+                "Quality: $qualityLabel ($qualityValue)\n" +
+                "Upload status: $lastUploadStatus (${lastUploadLatencyMs}ms)\n" +
+                "Uploads: ok=${uploadSuccessCount.get()} failed=${uploadFailureCount.get()} " +
+                "dropped=${uploadDroppedCount.get()}\nCamera error: $cameraErrorText"
     }
 
     private fun getImageQualityLabel(): String {

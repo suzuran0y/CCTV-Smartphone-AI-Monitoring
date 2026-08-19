@@ -118,9 +118,10 @@
           <div class="field">
             <label>Codec</label>
             <select id="codec">
-              <option value="mp4v">mp4v</option>
-              <option value="XVID">XVID</option>
-              <option value="avc1">avc1</option>
+              <option value="mp4v">mp4v (recommended)</option>
+              <option value="XVID">XVID (AVI fallback)</option>
+              <option value="MJPG">MJPG (AVI fallback)</option>
+              <option value="avc1">avc1 (requires compatible H.264)</option>
             </select>
           </div>
 
@@ -331,9 +332,9 @@
     <div class="footer-inner">
       <span>Sentinel System Dashboard</span>
       <span>·</span>
-      <span>v1.0.0-beta</span>
+      <span>v{{ sentinel_version }}</span>
       <span>·</span>
-      <span> Feb 23, 2026</span>
+      <span>{{ release_date }}</span>
       <span>·</span>
       <span>Made by Suzuran0y</span>
     </div>

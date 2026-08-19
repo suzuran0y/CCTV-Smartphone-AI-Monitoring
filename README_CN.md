@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.3-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,7 +12,9 @@
 
 本项目已被 [科技爱好者周刊](#CR) 和 [科技补全](#CR) 收录。感谢他们的认可与支持。
 
-🚀 最新更新（持续迭代中）：[v1.1.2 — 2026-06-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 最新更新（持续迭代中）：[v1.1.3 — 2026-08-20](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+
+本次维护将 CamFlow 连接流程调整为首次使用时手动输入 `server.py` 显示的地址，同时完成运行时版本统一、Windows 录像编码兼容与后备、配置日志密钥脱敏、上传大小保护、Android 地址校验与上传状态反馈，并扩充了自动化测试。
 
 ---
 
@@ -118,7 +120,7 @@ Sentinel 的设计目标不是提供单一监控功能，而是构建一个可�
 - **标准化图像帧上传接口（HTTP POST）**  
   Android 客户端以 JPEG 单帧形式持续上传，接口清晰、可扩展。
 
-- **分段式本地视频录制（MP4）与实时截图**  
+- **分段式本地视频录制（MP4 / AVI）与实时截图**
   支持按时间分段写入视频、图像文件，适用于长期运行与存档管理。
 
   </td>
@@ -130,8 +132,8 @@ Sentinel 的设计目标不是提供单一监控功能，而是构建一个可�
 - **结构化多模态视觉认知能力**  
   在触发条件后调用视觉模型进行语义分析，输出结构化结果，支持风险分级与事件管理。
 
-- **UDP 自动发现服务器机制**  
-  Android 客户端可自动识别局域网服务器地址，减少手动配置。
+- **明确可验证的手动连接流程**
+  PC 端启动时输出 CamFlow 地址，Android 客户端提供地址校验与 `/ping` 连接测试。
 
 - **结构化日志与配置管理系统**  
   本地生成运行日志与 AI 事件记录，支持可追溯与数据分析。
@@ -411,13 +413,15 @@ CamFlow 将普通手机转化为实时摄像终端，并：
 - 调用手机原生摄像头
 - 以 JPEG 单帧形式持续上传
 - 支持自定义上传帧率与图像质量（代码接口）
+- 单请求上传与状态计数可避免弱网下请求堆积，并便于排查连接问题
 
 ---
 
-#### ② 自动发现与连接
+#### ② 手动配置与连接
 
-- 支持 UDP 自动发现服务器或手动输入
-- 调试信息实时提示
+- PC 端 `server.py` 启动后明确输出可填入 CamFlow 的 `IP:PORT`
+- 首次启动 CamFlow 时手动输入该地址，以后启动会先测试已保存的连接
+- 严格校验 IP、端口及 HTTP/HTTPS 地址，并提供实时调试信息
 - 指定设备特定摄像头（代码接口）
 
 ---
@@ -437,9 +441,7 @@ CamFlow 与 PC 端形成“移动采集 + 本地处理”的完整系统架构�
 
 <td width="45%" align="center">
 
-<img src="assets/app_main_page.jpg" width="32%">
-<img src="assets/app_setting_page.jpg" width="32%">
-<img src="assets/app_failed_hint.jpg" width="32%">
+<img src="assets/app_main_page.jpg" width="40%">
 
 <br>
 <b>图 6 - CamFlow 应用界面</b>
@@ -481,6 +483,7 @@ Sentinel/
 ├── README.md                     # 项目说明文档
 ├── CamFlow_UserGuide.md          # 安卓端使用说明
 ├── requirements.txt              # 安装依赖
+├── version.properties            # PC 端、Android 端和文档共用的版本信息
 ├── .gitignore                    # 忽略项
 ├── LICENSE                       # MIT License
 │
@@ -508,7 +511,7 @@ Sentinel/
 │   │   └── __init__.py
 │   │
 │   ├── net/                      # 网络相关模块
-│   │   ├── net_discovery.py      # UDP 自动发现服务
+│   │   ├── net_discovery.py      # 保留的局域网实验模块（默认流程不启用）
 │   │   └── __init__.py
 │   │
 │   ├── recorder/                 # 视频录制模块
@@ -525,8 +528,7 @@ Sentinel/
 │       │   └── style.css
 │       │
 │       └── templates/            # HTML 模板
-│           ├── dashboard.html
-│           └── dashboard.txt
+│           └── dashboard.html
 │
 ├── PhoneCamSender/               # Android 客户端源码（Android Studio 项目）
 │   ├── app/                      # Android 应用模块
@@ -534,7 +536,8 @@ Sentinel/
 │   ├── build.gradle
 │   ├── settings.gradle
 │   └── ...
-│   └── CamFlow-v1.0.0-beta.apk   # 已编译 APK
+│   ├── CamFlow-v1.1.1.apk        # 当前已验证安装包（debug-signed）
+│   └── CamFlow-v1.1.0.apk        # 保留的旧版安装包
 │
 ├── assets/                       # README 展示图片
 │   ├── app_main_page.jpg
@@ -623,8 +626,10 @@ PhoneCamSender/
 已编译 APK 文件路径：
 
 ```
-PhoneCamSender/CamFlow-v1.0.0-beta.apk
+PhoneCamSender/CamFlow-v1.1.1.apk
 ```
+
+> 当前仓库安装包为 CamFlow v1.1.1（debug-signed），SHA-256：`575CCBFDD37E8931A81329794953D76202269FD5D4D82FA08E265784BB2985EB`。v1.1.0 安装包仅作为旧版保留。
 
 #### 3.4.1. 使用 APK 快速安装（推荐）
 
@@ -709,15 +714,15 @@ Default ingest: OFF (enable in dashboard)
 
 #### 4.2.2. 连接方式
 
-- 自动发现：CamFlow 支持在局域网内尝试发现服务器。如果发现成功，应用设置页或主页面会显示识别到的 Server Address。
-
-- 手动填写：若自动发现失败，请手动填写 Server Address。
-
-在 CamFlow 设置中填入先前 PC 端运行 `server.py` 时输出的 LAN 地址 IP：
+- CamFlow 默认采用手动地址配置，不再尝试自动发现服务器。
+- 首次启动时，App 会提示输入 Sentinel 服务器地址。
+- 在 PC 端运行 `server.py`，将启动输出中 `CamFlow:` 后的地址填入 App：
 
 ```
-<LAN_IP> or <LAN_IP>:<PORT>             # 从输出 http://<LAN_IP>:<PORT>/ 中摘取
+CamFlow:    192.168.1.10:8000
 ```
+
+也可在设置页修改地址，先点击 `Test connection`，显示连接成功后再点击 `Save`。
 
 #### 4.2.3. 启动上传（推送帧）
 
@@ -792,7 +797,7 @@ Live View 下方有三个按钮，其在初始状态下默认未开启：`Enable
 2. **Start / Stop Recording**
    - 功能：控制录制线程是否将 FrameBuffer 写入分段视频；
    - 特性：录制与预览功能互不干扰，视频录制的进行只需确保 `Ingest` 开启；
-   - 输出路径结构：`recordings/videos/YYYYMMDD/<cam_name>_YYYYMMDD_HHMMSS.mp4`，可于设置栏修改；
+   - 输出路径结构：`recordings/videos/YYYYMMDD/<cam_name>_YYYYMMDD_HHMMSS.mp4`；若后备为 XVID/MJPG，扩展名为 `.avi`；
    - 用法：点击按钮切换 `Recording` ON/OFF 状态。
 
 
@@ -866,7 +871,7 @@ Live View 下方有三个按钮，其在初始状态下默认未开启：`Enable
 | **Segment Secs** | 数字（秒） | 控制单个视频文件分段时长 | 推荐 60–3600。过大会生成超大文件，过小会生成大量碎片文件。 |
 | **Output Root** | 字符串（文件路径） | 视频与截图输出路径 | 推荐使用默认 `recordings`，避免使用系统盘根目录或无权限路径。 |
 | **Cam Name** | 字符串（标识名） | 摄像头标识，会写入文件名 | 推荐使用简洁标识（如 `phone1`），避免空格与特殊字符。 |
-| **Codec** | 字符串（FourCC 编码） | 视频编码格式，可选 `avc1` / `mp4v` / `XVID` | 推荐 `avc1` 或 `XVID`（兼容性好），不同系统对编码器支持不同，若录制出错可更换。 |
+| **Codec** | 字符串（FourCC 编码） | 视频编码格式，可选 `mp4v` / `XVID` / `MJPG` / `avc1` | Windows 默认推荐 `mp4v`；失败时录像器会自动尝试 XVID/MJPG。`avc1` 需要与 OpenCV 匹配的 H.264/OpenH264 库，不建议作为 Windows 默认值。 |
 | **Autosave** | 布尔值（true / false） | 是否在 `Apply` 后自动写入 `config.json` | 推荐开发阶段开启，实验调参阶段可关闭，避免频繁覆盖配置。 |
 
 ---
@@ -1533,6 +1538,11 @@ Only output one JSON object. Do not output markdown or extra explanations.
 - Dashboard 是否包含 Provider 配置字段与 Model Info 容器；
 - `/api/config` 是否可更新通用 Provider 字段并在 `/api/ai/status` 中生效；
 - 使用本地假 OpenAI-compatible 服务完整验证请求链路。
+- 图片上传的启停、解码失败和 8 MB 大小限制；
+- 录像编码器打开失败、自动后备和已成功编码器复用；
+- 配置更新日志不会写入真实 API Key；
+- Android 服务器地址规范化与非法地址拒绝。
+- Dashboard、版本 API、Gradle 与中英文 README 的版本一致性。
 
 运行测试：
 
@@ -1543,7 +1553,14 @@ python -m pytest -q
 当前验证结果：
 
 ```text
-12 passed
+18 passed
+```
+
+Android 单元测试可通过以下命令运行：
+
+```powershell
+cd PhoneCamSender
+.\gradlew.bat testDebugUnitTest
 ```
 
 其中，本地假模型服务测试会验证：
@@ -1565,10 +1582,13 @@ python -m pytest -q
 
 Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 组成，当前版本信息如下：
 
-- **Sentinel（PC + Dashboard）版本**：v1.1.2
-- **CamFlow（Android）版本**：v1.1.0
-- **本文档版本**：v1.1.2
-- **最后更新日期**：2026-06-26
+- **Sentinel（PC + Dashboard）版本**：v1.1.3
+- **CamFlow（Android 源码）版本**：v1.1.1
+- **仓库内 CamFlow APK 版本**：v1.1.1（debug-signed）
+- **本文档版本**：v1.1.3
+- **最后更新日期**：2026-08-20
+
+所有运行时版本统一定义于根目录 `version.properties`。PC 端通过 `app/version.py` 读取，供 Dashboard 页脚、启动信息和 `/api/version` 共用；Android Gradle 构建和设置页读取同一文件，不再单独硬编码版本号。该文件也记录当前 APK 路径与 SHA-256，自动测试会校验安装包和中英文 README 是否一致。
 
 ---
 
