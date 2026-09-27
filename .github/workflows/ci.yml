@@ -48,6 +48,9 @@ jobs:
           java-version: "17"
           cache: gradle
       - uses: android-actions/setup-android@v3
+        with:
+          # The legacy 'tools' package is no longer available from sdkmanager.
+          packages: platform-tools
       - name: Install Android SDK platform
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - name: Run Android unit tests
