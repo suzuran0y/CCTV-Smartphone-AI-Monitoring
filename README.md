@@ -14,9 +14,9 @@ This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech R
 
 🚀 Latest Update (ongoing): [v1.1.4 — 2026-09-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
-This update adds administrator authentication, default/privacy viewing modes, one-time CamFlow v1.1.2 pairing, recording retention and disk protection, and AI state-machine regression tests. It is being prepared as a **pre-release**, not a stable release; its GitHub Release has not been published.
+This update adds administrator authentication, default/privacy viewing modes, one-time CamFlow v1.1.2 pairing, recording retention and disk protection, and AI state-machine regression tests.
 
-**Known issue — unresolved:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods.
+**Known issue:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods.
 
 ### v1.1.4 upgrade and setup
 
