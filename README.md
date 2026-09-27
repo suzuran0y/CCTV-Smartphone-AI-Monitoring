@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.3-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.4-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,9 +12,54 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
-🚀 Latest Update (ongoing): [v1.1.3 — 2026-08-20](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 Latest Update (ongoing): [v1.1.4 — 2026-09-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
-This maintenance update makes first-time CamFlow setup use the address printed by `server.py`, centralizes runtime version metadata, adds Windows-compatible recording codec fallback, redacts API keys in configuration logs, protects upload size, and improves Android address validation and upload diagnostics with expanded tests.
+This update adds administrator authentication, default/privacy viewing modes, one-time CamFlow v1.1.2 pairing, recording retention and disk protection, and AI state-machine regression tests. It is being prepared as a **pre-release**, not a stable release; its GitHub Release has not been published.
+
+**Known issue — unresolved:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods.
+
+### v1.1.4 upgrade and setup
+
+Pairing help names the products without hardcoded release numbers; official version labels remain available in the Dashboard footer and CamFlow version/debug displays.
+
+1. Run `python server.py` in the project virtual environment. On first startup, the PC terminal displays the administrator token once. Save it securely; the server stores only a salted hash and never returns it through ordinary logs or configuration APIs.
+2. Open Dashboard, expand the top identity/mode row (**Login & camera pairing**) and sign in with the token. This panel is collapsed on each page load; expand it for login, logout and camera management. Administrator sessions last 8 hours and use a non-persistent HttpOnly / SameSite cookie. Log out explicitly: some browsers restore session cookies when restoring windows.
+3. Click **Add CamFlow** for an 8-character pairing code. In CamFlow v1.1.2 Settings, enter the server address, device name and code, tap **Pair / Re-pair**, then **Save**.
+4. The administrator enables **Ingest**, then optionally recording, snapshots or AI.
+
+To recover access, run `python server.py --reset-admin-token` on the PC. It displays a replacement token and exits. The old token and all administrator sessions immediately become invalid; paired cameras remain valid. Authentication data resides in `app/config/auth.sqlite3`; do not commit or share it. Users with direct filesystem access must still be controlled through OS permissions.
+
+| Mode / identity | Permission |
+| --- | --- |
+| Default-mode visitor | Live view and basic status only |
+| Privacy-mode visitor | Login page only; administrator login required for video and status |
+| Administrator | Configuration, recording, snapshots, logs, AI events, shutdown and device management |
+| Paired CamFlow | Image upload only, no management permissions |
+
+Choose **Viewing mode** and click **Apply**. Changing the mode persists the current configuration even with Autosave off. Privacy mode terminates existing unauthenticated streams; it cannot recall images visitors have already seen or saved.
+
+Pairing codes are single-use and expire after 5 minutes; generating another replaces the previous code. Android Keystore encrypts the device credential, which is bound to its server address and excluded from backups. The server stores only device-token hashes. Revoke individual cameras in Dashboard; changing servers, clearing local credentials or revocation requires re-pairing. There is still one shared stream: simultaneous uploads from multiple paired phones overwrite the same frame buffer, not separate camera feeds.
+
+**Compatibility:** CamFlow v1.1.0 / v1.1.1 cannot upload to this server; upgrade to v1.1.2. Never enter the administrator token on the phone. `/ping` checks reachability, not pairing. Authentication does not encrypt transport: default HTTP is for trusted LANs only, not direct public exposure. Configure HTTPS before using untrusted networks. Cloud AI still sends sampled images to the selected model provider.
+
+### Recording retention and disk protection
+
+| Setting | Default | Behavior |
+| --- | --- | --- |
+| `record_cleanup_enabled` | false | Explicit administrator confirmation enables permanent deletion of registered completed recordings |
+| `record_retention_days` | 7 | Expired recordings are removed first |
+| `record_max_storage_gb` | 20 GiB | Remove oldest completed recordings when over quota |
+| `record_min_free_gb` | 1 GiB | Stop/reject recording when disk space is low; display the reason in Dashboard |
+
+Cleanup only touches completed recordings registered by this version under the current Output Root's `videos` directory. It excludes active segments, snapshots, unregistered historical files and manually placed files, and refuses symlinks or Windows junctions. Deletion bypasses the recycle bin. Unregistered files still consume disk space and need separate management. Periodic quota enforcement is not a hard disk quota; an active segment can temporarily exceed it. Changing the output directory leaves previous directories for manual management.
+
+### Local validation and release status
+
+CamFlow v1.1.2 **build 9** clarifies resolution settings and diagnostics without changing capture sizes, encoding or upload behavior. **Resolution preference** offers Low / Medium / High, not guaranteed pixel dimensions; the camera chooses a supported size and different levels may produce the same size. Debug displays the selected preference and measured **Frame size** separately, clearing old dimensions when the camera restarts. No fixed-size resizing or additional cropping is applied.
+
+The experimental two-upload limit from build 8 remains; concurrent arrivals can be out of order. Build 9 has completed a basic real-device retest, with the upload timeout/slow refresh issue still unresolved. This is not a claim of reliable continuous monitoring.
+
+Python tests cover permission separation, CSRF, session/pairing expiry, revocation, retention/low disk, real video read/write, and AI trigger/dwell/grace/error recovery/key rotation. All 69 Python tests and 19 Android unit tests passed, and APK builds succeeded; Keystore device tests compiled but have not been run on a device. Background behavior and sustained operation have not undergone separate acceptance. Device environments listed later are historical records, not a complete v1.1.4 test matrix.
 
 ---
 
@@ -380,7 +425,7 @@ CamFlow transforms an ordinary smartphone into a real-time camera endpoint and:
 - Invokes the device's native camera
 - Continuously uploads frames in single JPEG format
 - Supports customizable upload frame rate and image quality (code-level interface)
-- Uses one in-flight upload with status counters to prevent request buildup on weak networks
+- Allows at most two outstanding uploads (experimental behavior retained from build 8), with status counters and no queued backlog
 
 ---
 
@@ -470,6 +515,7 @@ Sentinel/
 │   │   └── __init__.py
 │   │
 │   ├── core/                     # Core runtime modules
+│   │   ├── auth.py               # Administrator sessions and device pairing
 │   │   ├── frame_buffer.py       # Latest frame cache (system data sharing center)
 │   │   ├── logger.py             # Logging initialization
 │   │   ├── runtime.py            # Global runtime state management
@@ -481,15 +527,18 @@ Sentinel/
 │   │   └── __init__.py
 │   │
 │   ├── recorder/                 # Video recording module
+│   │   ├── storage.py            # Registered recording retention and disk protection
 │   │   ├── recorder.py           # Video writing logic
 │   │   ├── recorder_worker.py    # Recording thread controller
 │   │   └── __init__.py
 │   │
 │   └── web/                      # Web interface and API layer
 │       ├── webapp.py             # Flask routes and APIs
+│       ├── upload_diagnostics.py # Upload timing and request correlation
 │       ├── __init__.py
 │       │
 │       ├── static/               # Frontend static assets
+│       │   ├── access.js          # Login, access state and camera pairing
 │       │   ├── dashboard.js
 │       │   └── style.css
 │       │
@@ -499,10 +548,11 @@ Sentinel/
 ├── PhoneCamSender/               # Android client source code (Android Studio project)
 │   ├── app/                      # Android application module
 │   ├── gradle/                   # Gradle configuration
-│   ├── build.gradle
-│   ├── settings.gradle
-│   └── ...
-│   ├── CamFlow-v1.1.1.apk        # Current verified installation package (debug-signed)
+│   ├── build.gradle.kts
+│   ├── settings.gradle.kts
+│   ├── ...
+│   ├── CamFlow-v1.1.2.apk        # Current locally built installation package (debug-signed)
+│   ├── CamFlow-v1.1.1.apk        # Retained legacy installation package
 │   └── CamFlow-v1.1.0.apk        # Retained legacy installation package
 │
 ├── assets/                       # Images used in README
@@ -597,10 +647,10 @@ PhoneCamSender/
 The precompiled APK file is located at:
 
 ```
-PhoneCamSender/CamFlow-v1.1.1.apk
+PhoneCamSender/CamFlow-v1.1.2.apk
 ```
 
-> The current bundled package is CamFlow v1.1.1 (debug-signed), SHA-256: `575CCBFDD37E8931A81329794953D76202269FD5D4D82FA08E265784BB2985EB`. The v1.1.0 package is retained only as a legacy build.
+> The current bundled package is CamFlow v1.1.2 build 9 (debug-signed, resolution display clarification), SHA-256: `EBBD242B5C1660607D45808480895D8F88F71F106B6A64CE7CE2E3FC726F58E5`. Legacy packages remain until v1.1.2 device acceptance is complete.
 
 #### 3.4.1. Quick Installation via APK (Recommended)
 
@@ -1561,7 +1611,7 @@ python -m pytest -q
 Current verification result:
 
 ```text
-18 passed
+69 passed
 ```
 
 Run Android unit tests with:
@@ -1591,11 +1641,11 @@ The local fake model service test verifies that:
 The Sentinel system consists of **PC-side service program + Web Dashboard + Android CamFlow client**.  
 The current version information is as follows:
 
-- **Sentinel (PC + Dashboard) Version**: v1.1.3
-- **CamFlow (Android source) Version**: v1.1.1
-- **Bundled CamFlow APK Version**: v1.1.1 (debug-signed)
-- **Documentation Version**: v1.1.3
-- **Last Updated**: 2026-08-20
+- **Sentinel (PC + Dashboard) Version**: v1.1.4
+- **CamFlow (Android source) Version**: v1.1.2
+- **Bundled CamFlow APK Version**: v1.1.2 (debug-signed)
+- **Documentation Version**: v1.1.4
+- **Last Updated**: 2026-09-26
 
 All runtime versions are defined once in the root `version.properties`. The PC loads it through `app/version.py` for the Dashboard footer, startup output, and `/api/version`; the Android Gradle build and settings page read the same file instead of keeping separate hardcoded versions. The file also records the current APK path and SHA-256, and automated tests verify that the package matches both READMEs.
 
@@ -1628,7 +1678,7 @@ The system has been tested and validated under the following environments:
 Possible future improvements include:
 
 - **Security Mechanisms**
-  - Add Token / API Key authentication (for public network deployment)
+  - HTTPS deployment and separate viewer accounts (administrator authentication and device pairing ship in v1.1.4)
 
 - **Transmission Performance**
   - Replace some HTTP polling or MJPEG mechanisms with WebSocket / WebRTC (reduce latency and resource consumption)

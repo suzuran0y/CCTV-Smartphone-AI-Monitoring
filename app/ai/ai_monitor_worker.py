@@ -2,6 +2,7 @@
 import time
 from datetime import datetime
 from typing import Optional
+import uuid
 
 from .ai_store import AiRuntime, EventStore
 from .motion_trigger import MotionTrigger
@@ -37,14 +38,16 @@ def _should_call(now: float, last_ts: float, interval: float) -> bool:
     return (now - last_ts) >= interval
 
 
-def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventStore, logger, stop_event):
+def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventStore, logger, stop_event,
+                    *, clock=time.time, wait=None, client_factory=create_vision_client, motion_factory=MotionTrigger):
     """
     Triggered mode monitor:
       - SLEEP: run MotionTrigger only
       - OBSERVE: call ArkVisionClient every observe_interval seconds
       - Use has_person to confirm dwell >= threshold and to decide event end.
     """
-    motion = MotionTrigger()
+    motion = motion_factory()
+    wait = wait or stop_event.wait
     client = None
 
     # Cache to avoid recreating client on every loop.
@@ -58,7 +61,19 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
 
         # Only implement triggered branch for now
         if not ai_enabled or ai_mode != "triggered":
-            time.sleep(0.1)
+            with ai_rt.lock:
+                previous_id = ai_rt.event_id
+                ai_rt.state = "SLEEP"
+                ai_rt.event_id = None
+                ai_rt.event_start_ts = None
+                ai_rt.person_present_acc_sec = 0.0
+                ai_rt.last_person_true_ts = None
+                ai_rt.last_person_false_ts = None
+                ai_rt.dwell_confirmed = False
+            if previous_id:
+                event_store.add_event({"event_id": previous_id, "kind": "event_end", "reason": "disabled", "time_text": _now_text()})
+                motion = motion_factory()
+            wait(0.1)
             continue
 
         observe_interval = _clamp_float(cfg.get("ai_interval_observe", 5), 1, 60, 5)
@@ -78,14 +93,14 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                 missing.append("api_key")
             with ai_rt.lock:
                 ai_rt.last_ai_error = f"AI config missing: {', '.join(missing)}"
-            time.sleep(0.2)
+            wait(0.2)
             continue
 
         # Initialize / rebuild client if config changed
         sig = client_signature(cfg)
         if client is None or sig != last_client_sig:
             try:
-                client = create_vision_client(cfg)
+                client = client_factory(cfg)
                 last_client_sig = sig
                 with ai_rt.lock:
                     ai_rt.last_ai_error = ""
@@ -97,15 +112,15 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                     ai_rt.last_ai_error = f"Vision client init failed: {e}"
                 logger.error(f"Vision client init failed: {e}")
                 client = None
-                time.sleep(1.0)
+                wait(1.0)
                 continue
 
         frame = frame_buf.get_copy()
-        if frame is None:
-            time.sleep(0.05)
+        if frame is None or (frame_buf.age_sec() or 0) > 10:
+            wait(0.05)
             continue
 
-        now = time.time()
+        now = clock()
 
         with ai_rt.lock:
             state = ai_rt.state
@@ -118,7 +133,7 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                     ai_rt.state = "OBSERVE"
                     ai_rt.last_trigger_ts = now
                     ai_rt.last_trigger_reason = f"motion_ratio={ratio:.4f}"
-                    ai_rt.event_id = f"evt_{int(now)}"
+                    ai_rt.event_id = "evt_" + uuid.uuid4().hex
                     ai_rt.event_start_ts = now
                     ai_rt.person_present_acc_sec = 0.0
                     ai_rt.last_person_true_ts = None
@@ -126,6 +141,7 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                     ai_rt.dwell_confirmed = False
                     ai_rt.last_ai_error = ""
                     ai_rt.last_ai_json = None
+                    ai_rt.last_ai_call_ts = 0.0
 
                 event_store.add_event({
                     "event_id": ai_rt.event_id,
@@ -136,7 +152,7 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                 })
                 logger.info(f"AI event_start (motion ratio={ratio:.4f})")
 
-            time.sleep(0.05)
+            wait(0.05)
             continue
 
         # ================= OBSERVE: periodic model calls =================
@@ -151,7 +167,7 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                 dwell_ok = ai_rt.dwell_confirmed
 
             if not _should_call(now, last_call, observe_interval):
-                time.sleep(0.02)
+                wait(0.02)
                 continue
 
             prompt_template = str(cfg.get("ai_prompt_template", "") or "")
@@ -170,6 +186,9 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                     extra_prompt=extra_prompt,
                     jpeg_quality=jpeg_quality,
                 )
+                current_cfg = cfg_store.get_copy()
+                if stop_event.is_set() or not current_cfg.get("ai_enabled") or client_signature(current_cfg) != sig:
+                    continue
                 has_person = bool(parsed.get("has_person", False))
                 confidence = float(parsed.get("confidence", 0.0) or 0.0)
 
@@ -199,12 +218,13 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                     "error": str(e),
                 })
                 logger.error(f"AI analyze error: {e}")
-                time.sleep(0.05)
+                wait(0.05)
                 continue
 
-            # Dwell integration (approximate by observe_interval)
+            # Only consecutive positive observations establish elapsed presence.
             if has_person:
-                person_acc += observe_interval
+                if last_true is not None and last_false is None:
+                    person_acc += min(now - last_true, observe_interval)
                 last_true = now
                 last_false = None
             else:
@@ -253,13 +273,13 @@ def ai_monitor_loop(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventSt
                     ai_rt.last_person_false_ts = None
                     ai_rt.dwell_confirmed = False
 
-            time.sleep(0.02)
+            wait(0.02)
             continue
 
         # Unknown state -> reset
         with ai_rt.lock:
             ai_rt.state = "SLEEP"
-        time.sleep(0.1)
+        wait(0.1)
 
 
 def start_ai_monitor_thread(cfg_store, frame_buf, ai_rt: AiRuntime, event_store: EventStore, logger, stop_event):

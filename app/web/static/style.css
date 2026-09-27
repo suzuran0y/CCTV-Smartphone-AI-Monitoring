@@ -1,4 +1,14 @@
 
+[hidden] { display: none !important; }
+.visitor-mode #rightPane, .visitor-mode #splitter, .visitor-mode #floatingExpandBtn { display: none !important; }
+.visitor-mode #leftPane { flex: 1 1 auto !important; width: 100% !important; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+#adminToken { width: 260px; max-width: 65vw; }
+.access-panel { margin: 12px 0; }
+.access-panel summary { cursor: pointer; user-select: none; }
+.access-panel summary:focus-visible { outline: 2px solid #377dcc; outline-offset: 4px; }
+.access-panel-hint { margin-left: 8px; color: #666; font-size: 12px; }
+.access-panel-body { margin-top: 12px; }
 body { font-family: Arial, sans-serif; margin: 16px; }
 .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
 .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; }

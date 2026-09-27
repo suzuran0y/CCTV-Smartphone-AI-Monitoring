@@ -4,6 +4,9 @@ import pytest
 
 from app.recorder import recorder as recorder_module
 from app.recorder.recorder import SegmentRecorder
+import cv2
+import numpy as np
+import sqlite3
 
 
 class FakeWriter:
@@ -74,3 +77,30 @@ def test_recorder_reports_all_codec_failures(tmp_path, monkeypatch):
     assert [item[0] for item in attempts] == ["avc1", "mp4v", "XVID", "MJPG"]
     assert recorder.writer is None
     assert recorder.current_path is None
+
+
+def test_real_recording_can_be_reopened_and_is_registered(tmp_path):
+    recorder = SegmentRecorder(out_root=str(tmp_path / "videos"), codec="MJPG")
+    frame = np.zeros((48, 64, 3), dtype=np.uint8)
+    for _ in range(5):
+        recorder.write(frame)
+    path = recorder.current_path
+    recorder.stop()
+    capture = cv2.VideoCapture(path)
+    try:
+        ok, decoded = capture.read()
+        assert ok and decoded.shape == frame.shape
+        assert int(capture.get(cv2.CAP_PROP_FRAME_COUNT)) == 5
+    finally:
+        capture.release()
+    with sqlite3.connect(str(tmp_path / "videos" / ".sentinel-recordings.sqlite3")) as db:
+        assert db.execute("SELECT count(*) FROM recordings").fetchone()[0] == 1
+
+
+def test_storage_guard_runs_before_new_segment(tmp_path):
+    def guard():
+        raise OSError("disk full")
+    recorder = SegmentRecorder(out_root=str(tmp_path / "videos"), before_open=guard)
+    with pytest.raises(OSError, match="disk full"):
+        recorder.write(np.zeros((48, 64, 3), dtype=np.uint8))
+    assert recorder.writer is None

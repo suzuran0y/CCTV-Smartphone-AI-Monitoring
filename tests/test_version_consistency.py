@@ -1,4 +1,5 @@
 import hashlib
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from app.version import (
@@ -34,3 +35,15 @@ def test_runtime_versions_match_android_build_and_readmes():
         assert CAMFLOW_APK_PATH in readme
         assert CAMFLOW_APK_SHA256 in readme
         assert RELEASE_DATE in readme
+
+    dashboard = (ROOT / "app/web/templates/dashboard.html").read_text(encoding="utf-8")
+    assert "Pair CamFlow in its Settings." in dashboard
+    layout = ET.parse(ROOT / "PhoneCamSender/app/src/main/res/layout/activity_settings.xml")
+    texts = [node.get("{http://schemas.android.com/apk/res/android}text", "") for node in layout.iter()]
+    assert any(text.startswith("Pair with Sentinel. Get a one-use code") for text in texts)
+    assert "Resolution preference" in texts
+    assert any("not fixed pixel sizes" in text for text in texts)
+    main = (ROOT / "PhoneCamSender/app/src/main/java/com/example/phonecamsender/MainActivity.kt").read_text(encoding="utf-8")
+    assert "resolutionStatus.summary(getResolutionLabel())" in main
+    assert "getResolutionText()" not in main
+    assert "(actual $actualResolution)" not in main

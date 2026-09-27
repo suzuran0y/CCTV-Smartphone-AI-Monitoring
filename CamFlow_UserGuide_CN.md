@@ -3,7 +3,17 @@
 
 # CamFlow 使用说明
 
-[![Version](https://img.shields.io/badge/version-v1.1.1-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+> **v1.1.2 配对流程（Sentinel v1.1.4）：** 管理员先在 PC Dashboard 登录并点击 **Add CamFlow**，再在手机 Settings 输入服务器地址、设备名称及 8 位配对码，点击 **Pair / Re-pair** 后点击 **Save**。配对码一次有效、5 分钟后过期。管理员还需要开启 Ingest。管理令牌只在 PC 使用，不要填入手机。
+>
+> 手机通过 Android Keystore 加密保存上传凭据，并绑定当前服务器地址。**Clear local credentials** 仅清除手机凭据；要使令牌在服务器失效，还需管理员在 Dashboard 点击 **Revoke**。更换服务器或被撤销后重新配对。`401/403` 表示需要配对，`503` 表示管理员尚未开启 Ingest。连接测试成功仅代表服务器可达。
+>
+> 新服务器不接受 v1.1.0 / v1.1.1 的匿名上传。默认模式允许访客看画面，隐私模式要求管理员登录；两种模式都要求手机配对。HTTP 仅适用于可信局域网，不提供传输加密。此预发布 APK 已完成构建和单元测试，用户已重新安装并测试 build 9，确认除下述上传问题外本轮更新目标已完成。长时间运行和 Keystore 设备测试尚未完成专项真机验收，后文测试设备为历史记录。
+>
+> **已知问题 — 待解决：** 真机上传仍间歇性连接/响应超时，导致网页可能长时间不更新。
+
+**Resolution preference（分辨率偏好，build 9）：** Low / Medium / High 表达采集偏好，不代表固定输出尺寸；设备可能为不同档位选择相同的支持尺寸。Debug 例如显示 `Resolution preference: Low` 和 `Frame size: 480x480`，不再将内部请求尺寸当作输出尺寸。Frame size 来自当前相机裁剪区域（JPEG 编码也使用此区域），不代表服务器已经收到图片；上传忙碌时仍更新，切换档位后先清除旧尺寸，收到新帧才显示。本次不增加缩放、拉伸、补边或额外裁剪。
+
+[![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide_CN.md)
 [![Role](https://img.shields.io/badge/role-Client-blue)](README_CN.md)
 [![Protocol](https://img.shields.io/badge/protocol-HTTP%20Upload-orange)](#sec42)
@@ -134,7 +144,7 @@ CamFlow 主要功能包括：
 #### 1.3.1. 普通用户安装（APK 安装包）
 > 适用于“使用者/部署者”。
 
-1. 使用仓库内已验证的 `CamFlow-v1.1.1.apk`（debug-signed），或从 GitHub 项目的 **Releases** 页面下载 APK。
+1. 使用仓库内预发布的 `CamFlow-v1.1.2.apk`（debug-signed，build 9）。若从 GitHub 项目的 **Releases** 页面下载，请核对版本与已知问题；历史 APK 不兼容新版服务器。
 2. 安装并打开 CamFlow。
 3. 首次启动会请求摄像头权限，点击允许。
 
@@ -497,12 +507,13 @@ curl -i "http://<PC_IP>:<PORT>/ping"
 - Method：`POST`
 - Path：`/upload`
 - Content-Type：`multipart/form-data`
+- Authorization：`Bearer <paired-device-token>`（CamFlow 配对后自动添加，切勿使用管理员令牌）
 
 | 字段名 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `image` | JPEG bytes | 是 | 单帧 JPEG；服务端读取后解码为图像帧。|
 
-> 说明：当前服务端仅强依赖 `image` 字段。
+> 必须同时提供 `image` 字段和有效的已配对设备凭据。凭据缺失或无效会返回 `401/403`；`/ping` 成功不代表具有上传权限。
 
 **响应格式**
 
@@ -587,10 +598,10 @@ CamFlow:    192.168.1.10:8000    enter this address manually in the app
 ### 5.1. 系统版本信息 [⌃](#top)
 
 本系统由 PC 端服务器程序与 Android 端 CamFlow 应用组成，版本信息如下：
-- CamFlow（Android 源码）版本：v1.1.1
-- 仓库内安装包版本：v1.1.1（debug-signed）
-- 本文档版本：v1.1.1
-- 最后更新日期：2026-08-20
+- CamFlow（Android 源码）版本：v1.1.2
+- 仓库内安装包版本：v1.1.2（debug-signed）
+- 本文档版本：v1.1.2
+- 最后更新日期：2026-09-26
 
 ---
 
@@ -613,7 +624,7 @@ CamFlow:    192.168.1.10:8000    enter this address manually in the app
 - 依赖库：Flask、OpenCV、Requests 等
 - 网络环境：局域网（LAN）
 
-> 不建议在公网环境直接暴露接口，尚未增加安全认证机制。
+> 不建议在公网环境直接暴露接口。已实现管理员认证与设备配对，但认证不等于 HTTP 传输加密；请使用可信局域网或配置 HTTPS。
 
 ---
 
@@ -623,7 +634,7 @@ CamFlow:    192.168.1.10:8000    enter this address manually in the app
 
 为提升系统完整性与可扩展性，可做的优化包括：
 
-- Token / API Key 认证机制（如需接触公网）
+- HTTPS 部署与进一步的访问控制（管理员认证和设备配对已实现）
 - WebSocket 长连接替代当前的 HTTP 轮询（降低延迟和损耗）
 - 自适应帧率/分辨率控制（根据网络情况动态调整 interval）
 - 后台运行模式（屏幕关闭仍持续上传）

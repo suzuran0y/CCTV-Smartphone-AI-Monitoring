@@ -196,7 +196,8 @@ class ArkVisionClient:
 
         # Light normalization
         try:
-            parsed["has_person"] = bool(parsed["has_person"])
+            value = parsed["has_person"]
+            parsed["has_person"] = value is True or value == 1 or (isinstance(value, str) and value.lower() == "true")
         except Exception:
             parsed["has_person"] = False
 

@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 
 import cv2
+from .storage import safe_root, register_recording
 
 
 CODEC_EXTENSIONS = {
@@ -24,13 +25,14 @@ class SegmentRecorder:
       recordings/videos/YYYYMMDD/phone1_YYYYMMDD_HHMMSS.mp4
     """
     def __init__(self, out_root: str = "recordings", fps: int = 10, segment_seconds: int = 60,
-                 codec: str = "mp4v", cam_name: str = "cam1"):
-        self.out_root = out_root
+                 codec: str = "mp4v", cam_name: str = "cam1", before_open=None):
+        self.out_root = str(safe_root(out_root))
         self.fps = fps
         self.segment_seconds = segment_seconds
         self.requested_codec = codec
         self.active_codec = None
         self.cam_name = cam_name
+        self.before_open = before_open
 
         self.writer = None
         self.segment_start_ts = None
@@ -56,6 +58,8 @@ class SegmentRecorder:
         return path
 
     def _open_writer(self, frame_w: int, frame_h: int) -> str:
+        if self.before_open:
+            self.before_open()
         failures = []
         for codec in self._codec_candidates():
             if len(codec) != 4:
@@ -95,11 +99,14 @@ class SegmentRecorder:
         raise RuntimeError(f"VideoWriter open failed for all codecs ({detail})")
 
     def _close_writer(self) -> None:
+        completed = self.current_path
         if self.writer is not None:
             self.writer.release()
         self.writer = None
         self.segment_start_ts = None
         self.current_path = None
+        if completed and os.path.isfile(completed):
+            register_recording(self.out_root, completed)
 
     def write(self, frame_bgr) -> None:
         """Write one frame; auto-open and auto-rotate by time."""

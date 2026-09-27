@@ -12,7 +12,7 @@
     <div class="brand">
       <div class="brand-title">Sentinel System Dashboard</div>
       <div class="brand-subtitle">
-        Multi-Device Vision Monitoring & Risk Detection System
+        Vision Monitoring & Risk Detection System
       </div>
     </div>
 
@@ -23,6 +23,28 @@
     </div>
   </div>
 
+  <details id="accessPanel" class="card access-panel" aria-label="Access and pairing">
+    <summary>
+      <strong id="accessStatus" role="status">Checking access…</strong>
+      <span class="access-panel-hint">Login &amp; camera pairing</span>
+    </summary>
+    <div class="access-panel-body">
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <form id="loginForm" class="row" style="gap:8px">
+        <input id="adminToken" type="password" autocomplete="current-password" placeholder="Administrator token" aria-label="Administrator token" required>
+        <button type="submit">Administrator login</button>
+      </form>
+      <button id="logoutBtn" type="button" hidden>Log out</button>
+    </div>
+    <p id="accessMessage" role="status" class="hint">Get the administrator token from the PC's first startup output. Visitors can view only in default mode.</p>
+    <div id="devicePanel" hidden>
+      <button id="pairingBtn" type="button">Add CamFlow — generate pairing code</button>
+      <span id="pairingCode" role="status"></span>
+      <div id="deviceList"></div>
+      <p class="hint">Pair CamFlow in its Settings. Credentials authenticate access; use a trusted LAN or HTTPS. One camera stream is supported; multiple paired phones share it.</p>
+    </div>
+    </div>
+  </details>
 
   <div class="layout">
     <!-- Left: Live view -->
@@ -33,7 +55,8 @@
         </div>
 
         <div style="margin-top:10px;">
-          <img id="live" src="/stream" alt="live stream"/>
+          <img id="live" alt="Live stream — sign in if privacy mode is enabled"/>
+          <p id="liveLocked" class="hint" hidden>Privacy mode — sign in to view this camera.</p>
         </div>
 
         <div class="row" style="margin-top:12px; flex-wrap:wrap; gap:8px;">
@@ -84,6 +107,11 @@
         <div id="settingsBody">
           <!-- Basic config -->
         <div class="settings-grid">
+          <div class="field"><label for="viewer_auth_required">Viewing mode</label><select id="viewer_auth_required"><option value="false">Default — visitors can view</option><option value="true">Privacy — administrator login required</option></select></div>
+          <div class="field"><label for="record_cleanup_enabled">Automatic recording cleanup</label><select id="record_cleanup_enabled"><option value="false">Off</option><option value="true">On — delete registered completed recordings</option></select></div>
+          <div class="field"><label for="record_retention_days">Retention (days)</label><input id="record_retention_days" type="number" min="1" max="3650"></div>
+          <div class="field"><label for="record_max_storage_gb">Recording quota (GiB)</label><input id="record_max_storage_gb" type="number" min="0.1" step="0.1"></div>
+          <div class="field"><label for="record_min_free_gb">Minimum free disk (GiB)</label><input id="record_min_free_gb" type="number" min="0.1" step="0.1"></div>
 
           <div class="field">
             <label>Stream FPS</label>
@@ -326,6 +354,7 @@
     </div>
   </div>
 
+  <script src="{{ url_for('static', filename='access.js') }}"></script>
   <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 
   <footer class="app-footer">

@@ -48,14 +48,19 @@ const PROVIDER_PRESETS = {
 
 
 async function fetchJson(url, opts) {
-  const r = await fetch(url, opts || {});
+  opts = opts || {};
+  const headers = {...(opts.headers || {}), "X-Sentinel-Request": "1"};
+  if (accessState.csrf) headers["X-CSRF-Token"] = accessState.csrf;
+  const r = await fetch(url, {...opts, headers});
   let j = null;
   try { j = await r.json(); } catch(e) {}
   return {status: r.status, json: j};
 }
 
 async function refreshConfigForm() {
+  if (!accessState.admin) return;
   const cfg = await fetchJson("/api/config");
+  if (cfg.status !== 200 || !cfg.json) return;
   if (cfg.json) {
     document.getElementById("stream_fps").value = cfg.json.stream_fps;
     document.getElementById("jpeg_quality").value = cfg.json.jpeg_quality;
@@ -76,6 +81,11 @@ async function refreshConfigForm() {
   };
 
   setVal("ai_enabled", cfg.json.ai_enabled);
+  setVal("viewer_auth_required", String(cfg.json.viewer_auth_required));
+  setVal("record_cleanup_enabled", String(cfg.json.record_cleanup_enabled));
+  setVal("record_retention_days", cfg.json.record_retention_days);
+  setVal("record_max_storage_gb", cfg.json.record_max_storage_gb);
+  setVal("record_min_free_gb", cfg.json.record_min_free_gb);
   setVal("ai_provider", cfg.json.ai_provider);
   setVal("ai_model", cfg.json.ai_model);
   setVal("ai_base_url", cfg.json.ai_base_url);
@@ -158,11 +168,15 @@ function _pill(text, cls){
 }
 
 async function refreshStatusOnly() {
+  if (!accessReady || (accessState.viewer_auth_required && !accessState.admin)) return;
   const st = await fetchJson("/api/status");
-  if (!st.json) return;
+  if (st.status !== 200 || !st.json) return;
   const box = document.getElementById("status_readable");
   if (!box) return;
-  const ingestOn = !!st.json.ingest_enabled;
+  ingestOn = !!st.json.ingest_enabled;
+  recordingOn = !!st.json.recording;
+  syncIngestBtn();
+  syncRecordBtn();
   const recOn = !!st.json.recording;
   const ingestP = ingestOn ? _pill("ON", "ok") : _pill("OFF", "warn");
   const recP = recOn ? _pill("ON", "ok") : _pill("OFF", "warn");
@@ -173,10 +187,14 @@ async function refreshStatusOnly() {
     ? "—"
     : String(st.json.upload_fps);
 
-  const recFile = st.json.recording_file || "—";
+  const recFile = _escapeHtml(st.json.recording_file || "—");
   const recElapsed = _secToHMS(st.json.recording_elapsed_sec);
   const segRemain = _secToHMS(st.json.segment_remaining_sec);
   const counts = st.json.upload_counts || {};
+  if (!accessState.admin) {
+    box.innerHTML = `<div>Ingest: ${ingestP} · Recording: ${recP}</div><div>Last frame: ${lastAge} · Upload: ${uploadFps} FPS</div>`;
+    return;
+  }
   const c200 = counts["200_ok"] ?? 0;
   const cMiss = counts["400_missing_image"] ?? 0;
   const cDec = counts["400_decode_failed"] ?? 0;
@@ -193,8 +211,9 @@ async function refreshStatusOnly() {
       <div class="status-item"><span class="status-k">Stream FPS / JPEG</span><div class="status-v">${st.json.stream_fps} / ${st.json.jpeg_quality}</div></div>
       <div class="status-item"><span class="status-k">Record FPS / Segment</span><div class="status-v">${st.json.record_fps} / ${st.json.segment_seconds}s</div></div>
 
-      <div class="status-item"><span class="status-k">Output Root</span><div class="status-v">${st.json.out_root || "—"}</div></div>
-      <div class="status-item"><span class="status-k">Cam / Codec</span><div class="status-v">${st.json.cam_name || "—"} / ${st.json.recording_codec || st.json.codec || "—"}</div></div>
+      <div class="status-item"><span class="status-k">Output Root</span><div class="status-v">${_escapeHtml(st.json.out_root || "—")}</div></div>
+      <div class="status-item"><span class="status-k">Cam / Codec</span><div class="status-v">${_escapeHtml(st.json.cam_name || "—")} / ${_escapeHtml(st.json.recording_codec || st.json.codec || "—")}</div></div>
+      <div class="status-item"><span class="status-k">Storage / recording protection</span><div class="status-v">${_escapeHtml(st.json.recording_error || (st.json.storage?.free_gb !== undefined ? st.json.storage.free_gb + " GiB free" : "—"))}</div></div>
 
       <div class="status-item" style="grid-column:1/-1;"><span class="status-k">Recording file</span><div class="status-v" style="font-weight:600;">${recFile}</div></div>
       <div class="status-item"><span class="status-k">Rec elapsed</span><div class="status-v">${recElapsed}</div></div>
@@ -231,6 +250,7 @@ function _clip(s, n){
 }
 
 async function refreshAI() {
+  if (!accessState.admin) return;
   const r = await fetchJson("/api/ai/status");
   const rawPre = document.getElementById("ai_status_raw");
   const badge = document.getElementById("aiStateBadge");
@@ -453,6 +473,7 @@ function _renderHistoryItemAiError(ev){
 }
 
 async function refreshAIEvents() {
+  if (!accessState.admin) return;
   const list = document.getElementById("aiHistoryList");
   if (!list) return;
   const r = await fetchJson("/api/ai/events?n=200");
@@ -501,6 +522,7 @@ function refreshAIEventsIfEnabled() {
 }
 
 async function refreshLogTail() {
+  if (!accessState.admin) return;
   const n = 50; // 只取近 50 条
   const r = await fetchJson("/api/log/tail?n=" + n);
   const pre = document.getElementById("log_tail");
@@ -542,7 +564,6 @@ async function toggleIngest() {
   } else {
     await enableIngest();
   }
-  ingestOn = !ingestOn;
   syncIngestBtn();
 }
 
@@ -561,7 +582,6 @@ async function toggleRecording() {
     await startRec();
   }
 
-  recordingOn = !recordingOn;
   syncRecordBtn();
 }
 
@@ -578,9 +598,8 @@ async function shutdownSystem(){
   const ok = confirm("Shutdown the system now?\n\nIt will:\n(1) Stop recording\n(2) Disable ingest\n(3) Stop the Python server");
   if(!ok) return;
 
-  try { await fetch("/api/record/stop", {method:"POST"}); } catch(e) {}
-  try { await fetch("/api/ingest/disable", {method:"POST"}); } catch(e) {}
-  try { await fetch("/api/system/shutdown", {method:"POST"}); } catch(e) {}
+  const response = await fetchJson("/api/system/shutdown", {method:"POST"});
+  if (response.status !== 200) { showMsg(response.json?.error || "Shutdown failed"); return; }
 
   setTimeout(() => {
     try { window.open("", "_self"); } catch(e) {}
@@ -593,6 +612,11 @@ async function shutdownSystem(){
 async function applyConfig() {
   showMsg("");
   const payload = {
+    viewer_auth_required: document.getElementById("viewer_auth_required").value === "true",
+    record_cleanup_enabled: document.getElementById("record_cleanup_enabled").value === "true",
+    record_retention_days: Number(document.getElementById("record_retention_days").value),
+    record_max_storage_gb: Number(document.getElementById("record_max_storage_gb").value),
+    record_min_free_gb: Number(document.getElementById("record_min_free_gb").value),
     stream_fps: parseInt(document.getElementById("stream_fps").value),
     jpeg_quality: parseInt(document.getElementById("jpeg_quality").value),
     record_fps: parseInt(document.getElementById("record_fps").value),
@@ -626,6 +650,7 @@ async function applyConfig() {
     ai_prompt_extra: document.getElementById("ai_prompt_extra")?.value || ""
   };
 
+  if (payload.record_cleanup_enabled && !__cfgCache.record_cleanup_enabled && !confirm("Enable permanent deletion of registered completed recordings under the configured retention rules? Existing unregistered recordings are excluded.")) return;
   const r = await fetchJson("/api/config", {
     method: "PUT",
     headers: {"Content-Type":"application/json"},
@@ -640,6 +665,7 @@ async function applyConfig() {
   }
 
   await refreshConfigForm();
+  await refreshAccess();
   await refreshStatusOnly();
 }
 
@@ -665,6 +691,7 @@ async function disableIngest() {
 }
 async function startRec() {
   const r = await fetchJson("/api/record/start", {method:"POST"});
+  if (r.status !== 200) showMsg(r.json?.error || "Recording failed");
   if (r.json && r.json.note) showMsg(r.json.note);
   await refreshStatusOnly();
 }

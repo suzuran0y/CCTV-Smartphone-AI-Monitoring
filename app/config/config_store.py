@@ -2,6 +2,8 @@
 import json
 import os
 import threading
+import math
+import re
 from typing import Any, Dict, Optional, Tuple
 
 # Optional placeholders (kept to preserve your original structure)
@@ -13,6 +15,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # communication / ingest
     "ingest_enabled": False,  # default: do not accept phone uploads
     "autosave": False,
+    "viewer_auth_required": False,
+    "record_cleanup_enabled": False,
+    "record_retention_days": 7,
+    "record_max_storage_gb": 20,
+    "record_min_free_gb": 1,
 
     # preview / stream
     "stream_fps": 10,
@@ -92,7 +99,7 @@ def validate_and_normalize(patch: dict) -> Tuple[bool, dict, str]:
             v = float(patch[name])
         except Exception:
             raise ValueError(f"{name} must be float")
-        if v < lo or v > hi:
+        if not math.isfinite(v) or v < lo or v > hi:
             raise ValueError(f"{name} must be in [{lo}, {hi}]")
         cleaned[name] = v
 
@@ -121,8 +128,15 @@ def validate_and_normalize(patch: dict) -> Tuple[bool, dict, str]:
         cleaned[name] = v
 
     try:
+        if not isinstance(patch, dict):
+            raise ValueError("configuration must be an object")
         _bool("autosave")
         _bool("ingest_enabled")
+        _bool("viewer_auth_required")
+        _bool("record_cleanup_enabled")
+        _int("record_retention_days", 1, 3650)
+        _float("record_max_storage_gb", 0.1, 100000)
+        _float("record_min_free_gb", 0.1, 100000)
 
         _int("stream_fps", 1, 30)
         _int("jpeg_quality", 30, 95)
@@ -133,6 +147,11 @@ def validate_and_normalize(patch: dict) -> Tuple[bool, dict, str]:
         _str("out_root", 300)
         _str("cam_name", 80)
         _str("codec", 20)
+        if "cam_name" in cleaned and not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", cleaned["cam_name"]):
+            raise ValueError("cam_name must contain only letters, digits, underscores or hyphens")
+        if "out_root" in cleaned:
+            from app.recorder.storage import safe_root
+            safe_root(cleaned["out_root"])
 
         # AI switches
         _bool("ai_enabled")
@@ -192,29 +211,35 @@ class ConfigStore:
             if key in self.config:
                 self.config[key] = val
 
-    def load_from_disk(self, logger=None) -> None:
+    def load_from_disk(self, logger=None) -> bool:
         if not os.path.exists(self.path):
-            return
+            return True
         try:
             with open(self.path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+            ok, cleaned, err = validate_and_normalize(data)
+            if not ok:
+                raise ValueError(err)
             with self.lock:
-                self.config = merge_known_keys(DEFAULT_CONFIG, data)
+                self.config = merge_known_keys(DEFAULT_CONFIG, cleaned)
             if logger:
                 logger.info("config loaded from disk")
+            return True
         except Exception as e:
             if logger:
                 logger.error(f"load config failed: {e}")
+            return False
 
-    def save_to_disk(self, logger=None) -> None:
+    def save_to_disk(self, logger=None) -> bool:
         try:
             with self.lock:
-                data = self.config.copy()
-            with open(self.path, "w", encoding="utf-8") as f:
-                # Keep ensure_ascii=False (safe) so config remains human-readable.
-                json.dump(data, f, indent=2, ensure_ascii=False)
+                with open(self.path + ".tmp", "w", encoding="utf-8") as f:
+                    json.dump(self.config, f, indent=2, ensure_ascii=False)
+                os.replace(self.path + ".tmp", self.path)
             if logger:
                 logger.info("config saved to disk")
+            return True
         except Exception as e:
             if logger:
                 logger.error(f"save config failed: {e}")
+            return False

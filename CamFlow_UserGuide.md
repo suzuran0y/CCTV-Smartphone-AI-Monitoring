@@ -3,7 +3,17 @@
 
 # CamFlow User Guide
 
-[![Version](https://img.shields.io/badge/version-v1.1.1-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+> **v1.1.2 pairing with Sentinel v1.1.4:** The administrator signs into the PC Dashboard and clicks **Add CamFlow**. In phone Settings, enter the server address, device name and 8-character code, tap **Pair / Re-pair**, then **Save**. Codes are single-use and expire in 5 minutes. The administrator must also enable Ingest. Keep the administrator token on the PC; never enter it on the phone.
+>
+> Android Keystore encrypts the upload credential and binds it to the current server address. **Clear local credentials** clears only the phone's copy; the administrator must click **Revoke** in Dashboard to invalidate it on the server. Re-pair after changing servers or revocation. `401/403` means pairing is required; `503` means Ingest is disabled. A successful connection test only establishes reachability.
+>
+> The new server rejects anonymous uploads from v1.1.0 / v1.1.1. Default mode allows visitors to view; privacy mode requires administrator login. Both modes require camera pairing. HTTP is intended for trusted LANs and does not encrypt transport. This pre-release APK has passed build/unit checks. The user reinstalled and tested build 9 and confirmed the current update goals except for the upload issue below. Sustained operation and Keystore device tests have not completed separate device acceptance. Devices listed later are historical test records.
+>
+> **Known issue — unresolved:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods.
+
+**Resolution preference (build 9):** Low / Medium / High express a camera resolution preference, not a fixed output size. Devices may choose the same supported size for different levels. Debug shows, for example, `Resolution preference: Low` and `Frame size: 480x480`, without presenting an internal requested size as the output. Frame size is measured from the current camera crop (also used for JPEG encoding), not proof of successful delivery. It updates even while uploads are busy; switching levels clears old dimensions until a new frame arrives. No resizing, stretching, padding or additional cropping is introduced.
+
+[![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 [![Role](https://img.shields.io/badge/role-Client-blue)](README.md)
 [![Protocol](https://img.shields.io/badge/protocol-HTTP%20Upload-orange)](#sec42)
@@ -167,7 +177,7 @@ CamFlow provides the following core functionalities:
 
 > Intended for end users / deployment operators.
 
-1. Use the verified bundled `CamFlow-v1.1.1.apk` (debug-signed), or download an APK from the project's **Releases** page on GitHub.
+1. Use the bundled pre-release `CamFlow-v1.1.2.apk` (debug-signed, build 9). If downloading from the project's **Releases** page, check the version and known issues; historical APKs are not compatible with the new server.
 2. Install and open CamFlow on your Android device.
 3. On first launch, grant camera permission when prompted.
 
@@ -573,12 +583,13 @@ After receiving the request, the server:
 - Method: `POST`
 - Path: `/upload`
 - Content-Type: `multipart/form-data`
+- Authorization: `Bearer <paired-device-token>` (added automatically by CamFlow after pairing; never use the administrator token)
 
 | Field Name | Type | Required | Description |
 |------------|------|----------|-------------|
 | `image` | JPEG bytes | Yes | A single-frame JPEG image; decoded into an image frame on the server side |
 
-> Note: The current server implementation strictly depends on the `image` field.
+> The `image` field and a valid paired-device credential are required. Missing or invalid credentials return `401/403`; successful `/ping` does not authorize uploads.
 
 ---
 
@@ -668,10 +679,10 @@ If the PC's LAN IP changes, CamFlow will detect that the saved address is unavai
 The Sentinel system consists of the PC-side server program and the Android-side CamFlow application.  
 Current version information:
 
-- **CamFlow (Android source) Version**: v1.1.1
-- **Bundled APK Version**: v1.1.1 (debug-signed)
-- **This Document Version**: v1.1.1
-- **Last Updated**: 2026-08-20
+- **CamFlow (Android source) Version**: v1.1.2
+- **Bundled APK Version**: v1.1.2 (debug-signed)
+- **This Document Version**: v1.1.2
+- **Last Updated**: 2026-09-26
 
 ---
 
@@ -699,7 +710,7 @@ The system has been tested under the following environments:
 - Network: Local Area Network (LAN)
 
 > It is not recommended to expose the service directly to the public Internet.  
-> Security authentication mechanisms are not yet implemented in the current version.
+> Administrator authentication and camera pairing are implemented, but authentication does not encrypt HTTP traffic. Use a trusted LAN or configure HTTPS.
 
 ---
 
@@ -709,7 +720,7 @@ The system has been tested under the following environments:
 
 To improve system completeness and extensibility, future optimizations may include:
 
-- Token / API Key authentication mechanism (required if exposed to public network)
+- HTTPS deployment and further access controls (administrator authentication and device pairing are implemented)
 - WebSocket long connections to replace current HTTP polling (reduce latency and overhead)
 - Adaptive frame rate / resolution control (dynamically adjust interval based on network conditions)
 - Background execution mode (continue uploading when screen is off)

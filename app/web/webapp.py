@@ -2,11 +2,15 @@
 import os
 import time
 import threading
+import sqlite3
 from datetime import datetime
 
 import cv2
 import numpy as np
-from flask import Flask, request, Response, jsonify, render_template
+from flask import Flask, request, Response, jsonify, render_template, g
+from app.core.auth import AuthStore, install_auth
+from app.web.upload_diagnostics import install_upload_diagnostics
+from app.recorder.storage import maintain_storage
 
 from app.config.config_store import validate_and_normalize
 from app.ai.vision_client import safe_provider_info
@@ -25,7 +29,7 @@ def _redact_config_patch(patch: dict) -> dict:
     }
 
 
-def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, stop_event, threads, server_log_path: str) -> Flask:
+def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, stop_event, threads, server_log_path: str, auth_store=None) -> Flask:
     """
     Flask app factory.
 
@@ -40,6 +44,9 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
     app = Flask(__name__, template_folder=templates_dir, static_folder=static_dir)
     # Leave room for multipart metadata while enforcing an explicit image limit below.
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES + 1024 * 1024
+    auth_store = auth_store or AuthStore(os.path.join(os.path.dirname(cfg_store.path), "auth.sqlite3"))
+    install_upload_diagnostics(app, logger)
+    install_auth(app, auth_store, cfg_store)
 
     # Disable Werkzeug access logs (keep your original behavior)
     import logging as _logging
@@ -64,6 +71,7 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             stats.mark_rejected()
             return "ingest disabled", 503
 
+        read_started = time.perf_counter()
         f = request.files.get("image")
         if f is None:
             stats.mark_missing()
@@ -71,12 +79,19 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             return "missing image", 400
 
         data = f.stream.read(MAX_UPLOAD_BYTES + 1)
+        g.upload_read_ms = round((time.perf_counter() - read_started) * 1000, 1)
+        g.upload_bytes = len(data)
         if len(data) > MAX_UPLOAD_BYTES:
             stats.mark_too_large()
             logger.warning(f"413 image too large bytes>{MAX_UPLOAD_BYTES}")
             return "image too large", 413
 
-        img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+        decode_started = time.perf_counter()
+        try:
+            img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR) if data else None
+        except cv2.error:
+            img = None
+        g.upload_decode_ms = round((time.perf_counter() - decode_started) * 1000, 1)
         if img is None:
             stats.mark_decode_failed()
             logger.warning(f"400 decode failed bytes={len(data)}")
@@ -87,8 +102,12 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         return "OK"
 
     def mjpeg_generator():
+        session_token = request.cookies.get("sentinel_session", "")
         while True:
             cfg = cfg_store.get_copy()
+            # Recheck existing streams: privacy changes, logout and reset must take effect.
+            if cfg.get("viewer_auth_required") and not auth_store.session(session_token):
+                return
             stream_fps = int(cfg.get("stream_fps", 10))
             jpeg_quality = int(cfg.get("jpeg_quality", 80))
             ingest_enabled = bool(cfg.get("ingest_enabled", False))
@@ -116,7 +135,8 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
 
     @app.get("/stream")
     def stream():
-        return Response(mjpeg_generator(), mimetype="multipart/x-mixed-replace; boundary=frame")
+        from flask import stream_with_context
+        return Response(stream_with_context(mjpeg_generator()), mimetype="multipart/x-mixed-replace; boundary=frame")
 
     @app.get("/")
     @app.get("/dashboard")
@@ -148,6 +168,8 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
     @app.put("/api/config")
     def api_put_config():
         patch = request.get_json(silent=True) or {}
+        if not isinstance(patch, dict):
+            return jsonify(ok=False, error="configuration must be an object"), 400
 
         # If frontend returns placeholder/empty value, treat it as "do not modify ark_api_key"
         if "ark_api_key" in patch:
@@ -165,8 +187,9 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
 
         new_cfg = cfg_store.set_many(cleaned)
         autosave = bool(new_cfg.get("autosave", True))
-        if autosave:
-            cfg_store.save_to_disk(logger)
+        if autosave or "viewer_auth_required" in cleaned:
+            if not cfg_store.save_to_disk(logger):
+                return jsonify(ok=False, error="Applied in memory, but configuration could not be saved; check disk permissions"), 500
 
         # If recording is ON and key recording params changed, remind user to restart recording.
         changed_record_params = any(
@@ -181,12 +204,14 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
 
     @app.post("/api/config/save")
     def api_save_config():
-        cfg_store.save_to_disk(logger)
+        if not cfg_store.save_to_disk(logger):
+            return jsonify(ok=False, error="configuration save failed"), 500
         return jsonify({"ok": True})
 
     @app.post("/api/config/load")
     def api_load_config():
-        cfg_store.load_from_disk(logger)
+        if not cfg_store.load_from_disk(logger):
+            return jsonify(ok=False, error="configuration load failed; existing settings retained"), 400
         return jsonify({"ok": True})
 
     @app.post("/api/ingest/enable")
@@ -213,6 +238,18 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
 
     @app.post("/api/record/start")
     def api_record_start():
+        try:
+            with rec_rt.lock:
+                active = rec_rt.rec.current_path if rec_rt.rec else None
+                storage_cfg = cfg_store.get_copy()
+                if rec_rt.rec:
+                    storage_cfg["out_root"] = os.path.dirname(rec_rt.rec.out_root)
+                rec_rt.storage = maintain_storage(storage_cfg, active, logger)
+                if not rec_rt.storage["can_record"]:
+                    raise OSError("Disk free space below configured minimum")
+                rec_rt.last_error = ""
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            return jsonify(ok=False, error=str(exc)), 409
         cfg_store.set_key("recording", True)
         cfg = cfg_store.get_copy()
         if bool(cfg.get("autosave", True)):
@@ -248,6 +285,9 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
 
     @app.post("/api/system/shutdown")
     def api_system_shutdown():
+        shutdown = app.config.get("SERVER_SHUTDOWN")
+        if shutdown is None:
+            return jsonify(ok=False, error="shutdown unavailable in this hosting environment"), 503
         logger.warning("Shutdown requested from web UI")
 
         # Graceful shutdown order
@@ -286,12 +326,7 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         except Exception as e:
             logger.warning(f"shutdown: join threads failed: {e}")
 
-        # Hard-exit fallback (avoid hanging)
-        def _killer():
-            time.sleep(0.2)
-            os._exit(0)
-
-        threading.Thread(target=_killer, daemon=True).start()
+        threading.Thread(target=shutdown, daemon=True, name="http-shutdown").start()
         return jsonify({"ok": True, "message": "shutting down"})
 
     @app.post("/api/snapshot")
@@ -318,6 +353,12 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         age = frame_buf.age_sec()
         counts = stats.snapshot_counts()
         upload_fps = round(stats.upload_fps(), 2)
+        if not g.is_admin:
+            return jsonify(sentinel_version=SENTINEL_VERSION,
+                           ingest_enabled=bool(cfg.get("ingest_enabled")),
+                           recording=bool(cfg.get("recording")),
+                           last_frame_age_sec=age, upload_fps=upload_fps,
+                           stream_fps=cfg["stream_fps"], jpeg_quality=cfg["jpeg_quality"])
 
         # recorder info
         with rec_rt.lock:
@@ -359,7 +400,9 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             "recording_elapsed_sec": None if total_elapsed is None else round(total_elapsed, 1),
             "segment_remaining_sec": None if seg_remaining is None else round(seg_remaining, 1),
 
-            "upload_counts": counts
+            "upload_counts": counts,
+            "recording_error": rec_rt.last_error,
+            "storage": rec_rt.storage,
         })
 
     @app.get("/api/ai/status")

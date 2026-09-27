@@ -1,5 +1,7 @@
 # pc/app/ai/vision_client.py
 import json
+import hashlib
+import math
 import os
 import urllib.error
 import urllib.request
@@ -232,10 +234,11 @@ def _normalize_ai_json(parsed: Dict[str, Any]) -> Dict[str, Any]:
     parsed.setdefault("summary", "")
     parsed.setdefault("confidence", 0.0)
 
-    parsed["has_person"] = bool(parsed.get("has_person", False))
+    value = parsed.get("has_person", False)
+    parsed["has_person"] = value is True or value == 1 or (isinstance(value, str) and value.lower() == "true")
     try:
         c = float(parsed.get("confidence", 0.0) or 0.0)
-        parsed["confidence"] = max(0.0, min(1.0, c))
+        parsed["confidence"] = max(0.0, min(1.0, c)) if math.isfinite(c) else 0.0
     except Exception:
         parsed["confidence"] = 0.0
     return parsed
@@ -271,6 +274,6 @@ def client_signature(cfg: Dict[str, Any]) -> str:
         settings["kind"],
         settings["model"],
         settings["base_url"],
-        "key" if settings["api_key"] else "nokey",
+        hashlib.sha256(settings["api_key"].encode("utf-8")).hexdigest(),
         str(settings["timeout_sec"]),
     ])

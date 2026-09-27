@@ -27,6 +27,14 @@ recordings/*
 
 # Local configuration files
 app/config/config.json
+app/config/config.json.tmp
+app/config/auth.sqlite3*
+CODEX_MODIFICATION_LOG.md
+.local-validation/
+
+# Local release preparation notes (not project documentation)
+/docs/release-v1.1.4.md
+/docs/upload-diagnostics.md
 
 # System files
 .DS_Store

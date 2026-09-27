@@ -47,6 +47,12 @@
                 android:layout_height="wrap_content"
                 android:text="Test connection" />
 
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pair with Sentinel. Get a one-use code from Dashboard → Add CamFlow. Use a trusted LAN or HTTPS." />
+            <EditText android:id="@+id/deviceName" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Device name" android:inputType="text" android:maxLength="80" />
+            <EditText android:id="@+id/pairCode" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="8-character pairing code" android:inputType="textCapCharacters" android:maxLength="8" android:saveEnabled="false" />
+            <Button android:id="@+id/btnPair" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pair / Re-pair" />
+            <Button android:id="@+id/btnClearPairing" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Clear local credentials" />
+            <TextView android:id="@+id/pairStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Checking pairing…" />
             <Switch
                 android:id="@+id/switchShowDebug"
                 android:layout_width="match_parent"
@@ -93,13 +99,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Resolution"
+                android:text="Resolution preference"
                 android:textSize="16sp" />
 
             <Spinner
                 android:id="@+id/spinnerResolution"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Low / Medium / High are preferences, not fixed pixel sizes. The camera chooses a supported size; different levels may use the same size. Show debug info displays the measured Frame size."
+                android:textSize="13sp"
+                android:textColor="#666666" />
 
             <Button
                 android:id="@+id/btnSave"

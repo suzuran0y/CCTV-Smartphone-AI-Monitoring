@@ -7,9 +7,14 @@ from app.core.frame_buffer import FrameBuffer
 from app.core.runtime import RecorderRuntime
 from app.core.upload_stats import UploadStats
 from app.web.webapp import create_app
+from app.core.auth import AuthStore
+from conftest import authenticate
+from app.version import SENTINEL_VERSION, RELEASE_DATE, version_info
 
 
 def _make_test_client(tmp_path):
+    auth = AuthStore(tmp_path / "auth.sqlite3")
+    token = auth.initialize()
     cfg = DEFAULT_CONFIG.copy()
     cfg.update({
         "ai_provider": "openai",
@@ -29,8 +34,9 @@ def _make_test_client(tmp_path):
         stop_event=threading.Event(),
         threads={},
         server_log_path=str(tmp_path / "server.log"),
+        auth_store=auth,
     )
-    return app.test_client()
+    return authenticate(app.test_client(), auth, token)
 
 
 def test_ai_status_includes_safe_model_info(tmp_path):
@@ -65,8 +71,8 @@ def test_dashboard_has_model_info_container(tmp_path):
     assert 'id="ai_request_timeout_sec"' in html
     assert 'id="aiProviderHint"' in html
     assert "Model Info" in html
-    assert "v1.1.3" in html
-    assert "2026-08-20" in html
+    assert f"v{SENTINEL_VERSION}" in html
+    assert RELEASE_DATE in html
     assert "v1.0.0-beta" not in html
 
 
@@ -78,14 +84,7 @@ def test_version_endpoint_uses_central_metadata(tmp_path):
     assert resp.status_code == 200
     assert resp.get_json() == {
         "ok": True,
-        "data": {
-            "sentinel": "1.1.3",
-            "camflow_source": "1.1.1",
-            "camflow_version_code": 5,
-            "camflow_apk_path": "PhoneCamSender/CamFlow-v1.1.1.apk",
-            "camflow_apk_sha256": "575CCBFDD37E8931A81329794953D76202269FD5D4D82FA08E265784BB2985EB",
-            "release_date": "2026-08-20",
-        },
+        "data": version_info(),
     }
 
 

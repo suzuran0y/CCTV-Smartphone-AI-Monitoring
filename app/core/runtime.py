@@ -14,6 +14,8 @@ class RecorderRuntime:
     lock: threading.Lock = field(default_factory=threading.Lock)
     rec: object = None  # SegmentRecorder instance
     recording_start_ts: Optional[float] = None
+    last_error: str = ""
+    storage: dict = field(default_factory=dict)
 
     def is_opened(self) -> bool:
         with self.lock:
