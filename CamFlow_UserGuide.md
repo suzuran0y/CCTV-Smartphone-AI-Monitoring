@@ -3,16 +3,6 @@
 
 # CamFlow User Guide
 
-> **v1.1.2 pairing with Sentinel v1.1.4:** The administrator signs into the PC Dashboard and clicks **Add CamFlow**. In phone Settings, enter the server address, device name and 8-character code, tap **Pair / Re-pair**, then **Save**. Codes are single-use and expire in 5 minutes. The administrator must also enable Ingest. Keep the administrator token on the PC; never enter it on the phone.
->
-> Android Keystore encrypts the upload credential and binds it to the current server address. **Clear local credentials** clears only the phone's copy; the administrator must click **Revoke** in Dashboard to invalidate it on the server. Re-pair after changing servers or revocation. `401/403` means pairing is required; `503` means Ingest is disabled. A successful connection test only establishes reachability.
->
-> The new server rejects anonymous uploads from v1.1.0 / v1.1.1. Default mode allows visitors to view; privacy mode requires administrator login. Both modes require camera pairing. HTTP is intended for trusted LANs and does not encrypt transport. This pre-release APK has passed build/unit checks. The user reinstalled and tested build 9 and confirmed the current update goals except for the upload issue below. Sustained operation and Keystore device tests have not completed separate device acceptance. Devices listed later are historical test records.
->
-> **Known issue — unresolved:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods.
-
-**Resolution preference (build 9):** Low / Medium / High express a camera resolution preference, not a fixed output size. Devices may choose the same supported size for different levels. Debug shows, for example, `Resolution preference: Low` and `Frame size: 480x480`, without presenting an internal requested size as the output. Frame size is measured from the current camera crop (also used for JPEG encoding), not proof of successful delivery. It updates even while uploads are busy; switching levels clears old dimensions until a new frame arrives. No resizing, stretching, padding or additional cropping is introduced.
-
 [![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 [![Role](https://img.shields.io/badge/role-Client-blue)](README.md)
@@ -35,10 +25,14 @@
 - [2. Usage Workflow](#sec2)
   - [2.1. Launch & Interface](#sec21)
   - [2.2. Connecting to Server](#sec22)
+    - [Pairing and credentials](#camera-pairing)
   - [2.3. Settings Page](#sec23)
+    - [Resolution preference and measured size](#resolution-preference)
+    - [Upload status and diagnostics](#upload-diagnostics)
   - [2.4. Usage Steps](#sec24)
 
 - [3. FAQ](#sec3)
+  - [Known upload issue](#known-issues)
 
 - [4. Developer Documentation](#sec4)
   - [4.1. Architecture Overview](#sec41)
@@ -173,6 +167,8 @@ CamFlow provides the following core functionalities:
 
 ### 1.3. Installation [⌃](#top)
 
+Use CamFlow v1.1.2 with Sentinel v1.1.4. Older v1.1.0 / v1.1.1 clients cannot upload to the authenticated server. Review [known issues](#known-issues) before deployment.
+
 #### 1.3.1. Standard User Installation (APK Package)
 
 > Intended for end users / deployment operators.
@@ -258,8 +254,25 @@ Format examples:
 - **Connect**
   - Performs a connection test.
   - If the Dashboard still does not display video after connection:
-    - Ensure **Ingest** is enabled on the PC Dashboard.
+    - Confirm [pairing](#camera-pairing) is valid and **Ingest** is enabled on the PC Dashboard.
     - Verify firewall and port accessibility.
+
+---
+
+<a id="camera-pairing"></a>
+
+#### 2.2.2. Pairing and Credential Management
+
+1. Ask the administrator to sign into the PC Dashboard and click **Add CamFlow**.
+2. In CamFlow Settings, enter the server address, a device name and the 8-character pairing code.
+3. Tap **Pair / Re-pair**, then **Save**.
+4. The administrator enables **Ingest**; keep the camera running to upload.
+
+Pairing codes are single-use and expire after 5 minutes. Generating a new code replaces the previous one. Keep the administrator token on the PC; never enter it on the phone.
+
+Android Keystore encrypts the upload credential, binds it to the server address and excludes it from backups. **Clear local credentials** removes only the phone's copy. To invalidate it on the server, the administrator must click **Revoke** in Dashboard. Pair again after changing servers, clearing credentials or revocation.
+
+Both default and privacy modes require camera pairing. Default mode permits read-only visitors; privacy mode requires administrator login for viewing. See [Dashboard viewing modes](README.md#privacy-mode). Authentication does not encrypt HTTP: use a trusted LAN or HTTPS. Multiple paired phones still share one stream.
 
 ---
 
@@ -272,11 +285,16 @@ Here you can configure the server address, test connectivity, and control runtim
 
 ---
 
-#### Settings Page Fields & Function Description
+#### 2.3.1. Settings Fields and Controls
 
 | Field | Type | Format | Description |
 |-------|------|--------|-------------|
 | Server address | Text input | IPv4 or IPv4:Port | Specify the target server address for manual connection |
+| Device name | Text input | 1–80 characters | Name shown in Dashboard device management |
+| Pairing code | Text input | 8-character code | Single-use code generated by the administrator |
+| Upload image quality | Selection | Low / Medium / High | JPEG quality 35 / 55 / 75; higher values generally increase file size |
+| Upload rate | Selection | Low / Medium / High | Minimum intervals of 500 / 250 / 120 ms; actual successful FPS depends on capture and upload time |
+| Resolution preference | Selection | Low / Medium / High | Camera size preference, not guaranteed dimensions; see [resolution reporting](#resolution-preference) |
 
 ---
 
@@ -284,6 +302,8 @@ Here you can configure the server address, test connectivity, and control runtim
 |--------|--------|--------|-------------|
 | Test connection | Click | Success / Failure | Send a reachability test request to server (typically `/ping`) |
 | Save | Click | Save successful | Save current server address and settings |
+| Pair / Re-pair | Click | Success / Failure | Exchange a valid code for a device credential; tap Save afterward |
+| Clear local credentials | Click | Local credential removed | Does not revoke the server-side credential; see [pairing](#camera-pairing) |
 
 ---
 
@@ -294,6 +314,44 @@ Here you can configure the server address, test connectivity, and control runtim
 | Stop camera | ON / OFF | Stop capture and upload | Power saving / temporary pause |
 
 > When **Stop camera = ON**, the system will automatically enable *Hide preview* to prevent residual image display.
+
+---
+
+<a id="resolution-preference"></a>
+
+#### 2.3.2. Resolution Preference and Measured Frame Size
+
+Low / Medium / High express a camera resolution preference, not fixed output dimensions. The camera chooses a supported size; different levels may produce the same size. Debug can therefore show:
+
+```text
+Resolution preference: Low
+Frame size: 480x480
+```
+
+Frame size is measured from the current camera crop, which is also used for JPEG encoding. It is not a delivery confirmation. The value updates even while uploads are busy; changing levels clears old dimensions until a fresh frame arrives. No fixed-size resizing, stretching, padding or additional cropping is applied.
+
+<a id="upload-diagnostics"></a>
+
+#### 2.3.3. Upload Status and Diagnostics
+
+Enable **Show debug info** in Settings and return to the camera screen.
+
+| Field / result | Meaning and action |
+| --- | --- |
+| `OK (200)` / `ok` | Upload accepted; check that successes continue increasing |
+| `401/403` | Pairing required, invalid or revoked; obtain a new code and pair again |
+| `503` | Administrator needs to enable Ingest |
+| `failed` | Failed upload count; inspect its status and network phase |
+| `dropped` | Candidate frames skipped while upload slots are busy, not a network packet-loss count |
+| `Concurrency` | At most two outstanding uploads; no queued backlog. Arrivals can be out of order |
+| `Encode` | JPEG conversion/compression time |
+| `Last completed` / `Active` | Completed and active request IDs; do not mix different requests when comparing times |
+| `connecting` / `sending image` / `waiting response` | Observed client-side phase, not proof of packet delivery or the root cause |
+| `Server processing` | Server-side duration returned in response headers; `unknown` is not zero |
+
+Connect timeout is 3 seconds, read/write timeouts are 4 seconds and the whole-call limit is 5 seconds; failed frames are not automatically replayed. These limits bound waiting but do not fix the underlying failure.
+
+Match a request ID with `upload begin/end` lines in the PC's `log/server.log`. Share only relevant lines, never tokens, authentication databases or full configuration files. If a paired phone still times out with Ingest enabled, see [known issues](#known-issues).
 
 ---
 
@@ -314,25 +372,24 @@ Before using CamFlow, ensure the following conditions are met:
 
 #### 2.4.2. Deployment Workflow
 
-1. **Start the Sentinel PC server**;
-2. Upon successful startup, the terminal will output the server IP address in the form:  `<PC_IP>:<PORT>`;
-3. On the phone browser, access:  `http://<PC_IP>:<PORT>/ping`; If the response is `OK`, the server is running correctly;
-4. Ensure the phone and PC are connected to the **same Wi-Fi network**;
-5. Open CamFlow and enter the `IP:PORT` printed after `CamFlow:` in the PC terminal;
-6. Select **Connect**, or use **Test connection** in Settings before saving;
-7. Verify that `Status` changes to `Connected`;
-8. Once connected, tap the top-right corner to enter the Settings page if configuration adjustments are needed;
-9. Open the PC-side Dashboard using: `http://<PC_IP>:<PORT>/`;
-10. Click the `Enable Ingest` button to allow the server to receive frames;
-11. Once the **Live View** window updates with the camera feed, CamFlow is successfully running.
+1. Start Sentinel on the PC, save the first-run administrator token and find `CamFlow: <PC_IP>:<PORT>`.
+2. Connect the phone and PC to the same trusted LAN; enter that address in CamFlow and test connectivity.
+3. Sign into Dashboard as administrator and click **Add CamFlow**.
+4. Enter the device name and code in phone Settings; tap **Pair / Re-pair**, then **Save**.
+5. The administrator clicks **Enable Ingest**; keep the phone camera running.
+6. Check that the phone's `ok` count grows and Dashboard Live View / Last frame age keep updating. Connected alone does not mean upload succeeded.
+7. If this fails, use [upload diagnostics](#upload-diagnostics) to inspect pairing, Ingest, request phases and [known issues](#known-issues).
 
 ---
-
-At this point, the CamFlow service and its data transmission to the PC server are fully operational.
 
 <a id="sec3"></a>
 
 ## 3. FAQ [⌃](#top)
+
+<a id="known-issues"></a>
+
+**Known issue:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods. The cause is unconfirmed; do not rely on the current build for uninterrupted monitoring. Lower settings do not guarantee recovery. See [upload diagnostics](#upload-diagnostics).
+
 
 <details>
 
@@ -385,7 +442,7 @@ At this point, the CamFlow service and its data transmission to the PC server ar
 
 ### Possible Causes
 
-1. The settings on the settings page have not been updated.
+1. Device pairing is missing/revoked, or privacy mode requires administrator login in the browser.
 2. **Ingest** is not enabled on the PC Dashboard (receiving switch is OFF);
 3. Upload endpoint path or field name mismatch (e.g., server expects `image` but client sends differently);
 4. Upload succeeds but frames are rate-limited or dropped on server side (check logs);
@@ -395,11 +452,11 @@ At this point, the CamFlow service and its data transmission to the PC server ar
 
 1. Check whether `/upload` requests are received on the PC server;
 2. Refresh the Dashboard page and verify **Ingest** status;
-3. Reduce sending load by increasing `Interval` (e.g., 200–300ms) to test stability.
+3. Inspect the status code and request phase using [upload diagnostics](#upload-diagnostics). Lower upload settings can reduce load but do not guarantee recovery from the [known timeout issue](#known-issues).
 
 ### Solutions
 
-- Click on the upper right corner to enter the settings page and update the settings once；
+- If pairing is missing or revoked, obtain a new code, tap **Pair / Re-pair**, then **Save**;
 - Ensure **Ingest** is enabled;
 - Align client/server API contract (path, field name, port);
 - Adjust sending interval, resolution, or JPEG quality to match network and PC performance.
@@ -661,6 +718,8 @@ Run server.py
     → Enter it in the first-launch prompt or Settings
     → Test the connection with GET /ping
     → Save the address
+    → Pair with an administrator-generated code
+    → Administrator enables Ingest
     → Upload images with POST /upload
 ```
 
@@ -690,7 +749,9 @@ Current version information:
 
 ### 5.2. Test Environment [⌃](#top)
 
-The system has been tested under the following environments:
+Local validation passed 19 Android unit tests and main/instrumentation APK builds; Android CI also passed. Build 9 completed a basic real-device retest. Keystore instrumentation tests have not run on a device, and sustained/background operation has not completed separate acceptance. The [upload issue](#known-issues) remains unresolved.
+
+The following environments are historical test records, not a complete current-release test matrix:
 
 ---
 

@@ -12,56 +12,7 @@
 
 本项目已被 [科技爱好者周刊](#CR) 和 [科技补全](#CR) 收录。感谢他们的认可与支持。
 
-🚀 最新更新（持续迭代中）：[v1.1.4 — 2026-09-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
-
-本次更新增加管理员认证、默认/隐私查看模式、CamFlow v1.1.2 一次性配对、录像保留与磁盘保护，并完善 AI 状态机回归测试。
-
-**已知问题：** 真机上传仍间歇性连接/响应超时，导致网页可能长时间不更新。
-
-### v1.1.4 升级与使用
-
-配对提示仅使用产品名称，不写死具体版本号；正式版本仍可在 Dashboard 页脚及 CamFlow 版本/调试信息中查看。
-
-1. 使用项目虚拟环境运行 `python server.py`。首次启动在 PC 终端显示一次管理员令牌，请妥善保存；服务端只存加盐摘要，不会在普通日志或配置接口中返回令牌。
-2. 打开 Dashboard，点击顶部身份/模式摘要栏（**Login & camera pairing**）展开后输入管理员令牌登录。该面板每次打开页面默认折叠，登录、退出和设备管理均在展开后操作。管理会话有效期为 8 小时，使用不持久化的 HttpOnly / SameSite Cookie；请主动退出，部分浏览器的会话恢复功能可能保留 Cookie。
-3. 点击 **Add CamFlow** 获取 8 位配对码，在 CamFlow v1.1.2 的 Settings 中输入服务器地址、设备名、配对码，点击 **Pair / Re-pair**，成功后点击 **Save**。
-4. 管理员点击 **Enable Ingest** 开启上传，按需录像、截图或启用 AI。
-
-管理令牌丢失时，在 PC 项目目录运行 `python server.py --reset-admin-token`。命令显示新令牌后退出；旧令牌与所有管理会话立即失效，已配对手机不受影响。PC 上保存认证数据的文件是 `app/config/auth.sqlite3`，不得提交或公开分享；直接访问本机文件的用户仍应通过操作系统权限管理。
-
-| 模式 / 身份 | 权限 |
-| --- | --- |
-| 默认模式访客 | 只查看实时画面和基础状态 |
-| 隐私模式访客 | 只能打开登录页面；画面和状态需要管理员登录 |
-| 管理员 | 配置、录像、截图、日志、AI 事件、关闭服务和设备管理 |
-| 已配对 CamFlow | 只上传图像，不具有管理权限 |
-
-在 **Viewing mode** 选择模式并点击 **Apply**，模式会持久保存，即使 Autosave 关闭也会保存当前配置。隐私模式会终止已经打开的未认证视频流。模式变化不能收回访客之前看到或保存的画面。
-
-配对码一次有效、5 分钟过期；生成新码会替换旧码。手机凭据通过 Android Keystore 加密，并绑定服务器地址，且排除在备份之外。服务器只保存设备令牌摘要。Dashboard 可单独撤销手机；手机更换服务器、清除凭据或被撤销后需要重新配对。当前仍只有一路共享画面，多台已配对手机同时上传会覆盖同一画面，尚未实现多摄像头管理。
-
-**兼容性：** v1.1.0 / v1.1.1 客户端无法向新版上传，必须升级至 v1.1.2。管理令牌不要填入手机。`/ping` 仅检测服务器可达，不代表配对成功。认证不等于传输加密：默认 HTTP 仅适用于可信局域网，不应直接暴露公网；不可信网络应先配置 HTTPS。使用线上 AI 时，采样图像仍会发送给所选模型供应商。
-
-### 录像保留与空间保护
-
-| 配置 | 默认值 | 行为 |
-| --- | --- | --- |
-| `record_cleanup_enabled` | false | 管理员确认开启后，允许永久删除已登记的完成录像 |
-| `record_retention_days` | 7 | 优先删除超期录像 |
-| `record_max_storage_gb` | 20 GiB | 超限时从最旧完成录像开始清理 |
-| `record_min_free_gb` | 1 GiB | 空间不足时停止/拒绝录像，并在 Dashboard 显示原因 |
-
-只清理当前 Output Root 下 `videos` 中由本版本登记的完成录像，不清理活动录像、截图、历史未登记文件或手动放入的文件；不跟随符号链接或 Windows 目录联接。清理是永久删除，不进入回收站。未登记文件仍会占用磁盘，因此应另行管理。配额由定期检查执行，不是硬磁盘配额，活动录像段可能暂时超限。保留策略仅作用于当前输出目录，切换目录后旧目录需自行管理。
-
-### 本地验证与发布状态
-
-CamFlow v1.1.2 **build 9** 调整分辨率设置和调试文案，不改变采集尺寸、编码或上传行为。**Resolution preference（分辨率偏好）** 提供 Low / Medium / High，不承诺固定像素尺寸；相机会选择支持的尺寸，不同档位可能得到相同尺寸。Debug 分别显示所选档位与实测 **Frame size（图像尺寸）**，重启相机时清除旧尺寸，不进行固定尺寸缩放或额外裁剪。
-
-仍保留 build 8 的实验性两笔并发上传，并发仍可能造成乱序到达。build 9 已完成基本真机复测，上传超时/刷新缓慢问题仍待解决。这不代表连续监控可靠性已通过验收。
-
-Python 测试覆盖权限隔离、CSRF、会话与配对过期、设备撤销、录像保留/空间不足、真实视频读写、AI 触发/停留/宽限/异常恢复和密钥轮换。69 项 Python 测试与 19 项 Android 单元测试通过，APK 构建成功；Keystore 设备测试已编译但尚未在设备执行。后台行为与长时间运行尚未完成专项验收。README 后文的设备环境为历史记录，不代表完整的本版测试矩阵。
-
----
+🚀 最新更新（持续迭代中）：[v1.1.4 — 2026-09-27](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框架。
 
@@ -121,6 +72,10 @@ Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框�
   - [4.1. 启动 PC 端](#sec41)
   - [4.2. 启动 CamFlow](#sec42)
   - [4.3. Dashboard 指南](#sec43)
+    - [管理员登录与令牌管理](#admin-access)
+    - [默认／隐私查看模式](#privacy-mode)
+    - [摄像头配对与撤销](#camera-pairing)
+    - [录像保留与磁盘保护](#recording-storage)
   - [4.4. AI 监控功能](#sec44)
   - [4.5. Dashboard AI 模块指南](#sec45)
   - [4.6. 第三方模型调用](#sec46)
@@ -130,6 +85,7 @@ Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框�
   - [5.2. 测试环境说明](#sec52)
   - [5.3. 后续规划](#sec53)
   - [5.4. 使用与授权说明](#sec54)
+  - [5.5. 已知问题](#known-issues)
 
 ---
 
@@ -457,8 +413,8 @@ CamFlow 将普通手机转化为实时摄像终端，并：
 
 - 调用手机原生摄像头
 - 以 JPEG 单帧形式持续上传
-- 支持自定义上传帧率与图像质量（代码接口）
-- 最多两笔并发上传（沿用 build 8 实验设置），提供状态计数且不排队积压旧帧
+- 在 Settings 配置上传率、JPEG 质量与[分辨率偏好](CamFlow_UserGuide_CN.md#resolution-preference)
+- 最多两笔并发上传，提供状态计数且不排队积压旧帧；并发请求可能乱序到达
 
 ---
 
@@ -667,6 +623,8 @@ volcenginesdkarkruntime        # AI 模块依赖
 
 ### 3.4. Android 端部署 [⌃](#top)
 
+**兼容性：** 当前认证服务器需搭配 CamFlow v1.1.2，v1.1.0／v1.1.1 无法匿名上传。部署前请阅读[已知问题](#known-issues)。
+
 Android 端应用 CamFlow 负责了项目的摄像功能与图像上传。应用源码位于项目库路径：
 
 ```
@@ -749,7 +707,7 @@ Default ingest: OFF (enable in dashboard)
 
 > ⚠️ 注意：摄像设备端要填写 LAN 地址。启动成功但未开启 ingest 时，Live View 为空属于正常现象。
 
-至此，PC 端服务已成功启动。
+首次启动时，终端还会显示一次管理员令牌，请妥善保存。在 Dashboard 展开 **Login & camera pairing** 登录；令牌恢复与会话规则见[管理员登录与令牌管理](#admin-access)。
 
 ---
 
@@ -776,9 +734,11 @@ CamFlow:    192.168.1.10:8000
 
 #### 4.2.3. 启动上传（推送帧）
 
-- 当 Server Address 连接成功后程序会自行开始采集/上传摄像数据。
+1. 管理员登录 Dashboard，点击 **Add CamFlow** 生成配对码。
+2. 在 CamFlow 设置页填写服务器地址、设备名和配对码，点击 **Pair / Re-pair**，再点击 **Save**。
+3. 管理员开启 **Ingest**；相机运行且凭据有效时，CamFlow 才能采集并上传。
 
-- 点击 App 主界面右上角可以进入设置页进行 App 的进一步设置。
+**Test connection** 成功仅说明服务器可达，不代表具有上传权限。详见[摄像头配对](#camera-pairing)与手机端[配对步骤](CamFlow_UserGuide_CN.md#camera-pairing)。
 
 #### 4.2.4. PC 端验证
 
@@ -786,7 +746,7 @@ CamFlow:    192.168.1.10:8000
 
 - 由于 `Ingest` 默认为 `off` 状态，因此初打开页面时 Live View 栏不会显示摄像端画面而是 `Ingest OFF - enable in dashboard`。
 
-- 点击按钮 `Enable Ingest`，查看 Live View 是否出现画面。如果没画面，则展开 Live View 栏下方的 Logs 栏（默认折叠）查看是否出现 ingest disabled 等，并根据信息调试设置。
+- 管理员登录后点击 `Enable Ingest`，查看 Live View 是否出现画面。如果没画面，则展开 Live View 栏下方的 Logs 栏（默认折叠）查看是否出现 ingest disabled 等，并根据信息调试设置。
 
 - 正常情况下，随着 `Ingest` 状态为 `ON` ，PC 端的 dashboard 中的 Live View 栏会立刻更新摄像设备的图像信息。
 
@@ -798,7 +758,7 @@ CamFlow:    192.168.1.10:8000
 
 ### 4.3. Dashboard 指南 [⌃](#top)
 
-> Dashboard 页面由 `dashboard.html + dashboard.js + style.css` 组成，核心数据来自后端 API 。
+> Dashboard 由 `dashboard.html`、`access.js`、`dashboard.js` 和 `style.css` 组成，数据与权限检查来自后端 API。下述管理控件需登录后使用；访客只能按[查看模式](#privacy-mode)获得画面访问权限。
 ---
 
 #### 4.3.1. 页面结构
@@ -807,7 +767,8 @@ Dashboard 的布局分为三部分：顶部栏 + 左侧监控区 + 右侧设置�
 
 - **顶部栏**
   - 标题：`Sentinel System Dashboard` & 副标题：`Multi-Device Vision Monitoring & Risk Detection System`
-  - 按钮：`Shutdown`
+  - **Login & camera pairing**：默认折叠，展开后可登录、退出及管理设备
+  - 按钮：`Shutdown`（仅管理员）
 - **左侧面板**
   - `Live View`：实时画面预览 + 快捷控制按钮
   - `Monitor Status`：系统状态汇总 + `Logs`：系统日志
@@ -915,6 +876,7 @@ Live View 下方有三个按钮，其在初始状态下默认未开启：`Enable
 
 | 配置名 | 字段形式 | 作用 | 推荐取值 |
 |------|----------|------|--------------|
+| **Viewing mode** | Default / Privacy | 控制访客访问 | 见[查看模式](#privacy-mode)；更改此项时，即使关闭 Autosave 也会保存当前配置。 |
 | **Stream FPS** | 数字（帧/秒） | 控制浏览器端的 MJPEG 刷新频率 | 推荐 8–15。过高会增加 CPU 与带宽占用，低于 5 画面会明显卡顿。 |
 | **JPEG Quality** | 数字 | 控制画面的 JPEG 质量压缩系数 | 推荐 60–80。过低画面模糊，过高在高 FPS 下会明显增加 CPU 负担。 |
 | **Record FPS** | 数字（帧/秒） | 控制录制视频的写入帧率 | 推荐 10–15。过高会增加写盘压力与文件体积，低于 8 视频流畅度下降。 |
@@ -953,9 +915,67 @@ Live View 下方有三个按钮，其在初始状态下默认未开启：`Enable
 
 ---
 
+<a id="recording-storage"></a>
+
+##### 4.3.5.1. 录像保留与磁盘保护
+
+| 配置 | 默认值 | 行为 |
+| --- | --- | --- |
+| `record_cleanup_enabled` | false | 管理员确认开启后，允许永久删除已登记的完成录像 |
+| `record_retention_days` | 7 | 优先删除超期录像 |
+| `record_max_storage_gb` | 20 GiB | 超限时从最旧完成录像开始清理 |
+| `record_min_free_gb` | 1 GiB | 空间不足时停止/拒绝录像，并在 Dashboard 显示原因 |
+
+只清理当前 Output Root 下 `videos` 中由本版本登记的完成录像，不清理活动录像、截图、历史未登记文件或手动放入的文件；不跟随符号链接或 Windows 目录联接。清理是永久删除，不进入回收站。未登记文件仍会占用磁盘，因此应另行管理。配额由定期检查执行，不是硬磁盘配额，活动录像段可能暂时超限。保留策略仅作用于当前输出目录，切换目录后旧目录需自行管理。
+
+管理员在 Settings 中调整这些参数并点击 **Apply**；开启自动清理需要确认永久删除。
+
+---
+
 #### 4.3.6. Shutdown（停止系统）
 
 > ⚠️ 这是“结束服务”的按钮，顶部 `Shutdown` 按钮会触发系统关闭流程：停止录制、关闭 ingest、停止 Python 服务，并尝试关闭页面。
+
+---
+
+<a id="admin-access"></a>
+
+#### 4.3.7. 管理员登录与令牌恢复
+
+展开顶部 **Login & camera pairing**，输入 PC 首次启动时显示一次的管理员令牌。该栏每次加载页面默认折叠，登录、退出和设备管理均在展开后操作。
+
+服务端仅保存令牌的加盐摘要，不保存明文。管理会话有效期为 8 小时，使用不持久化的 HttpOnly / SameSite Cookie。请主动退出；部分浏览器恢复窗口时也会恢复会话 Cookie。
+
+丢失令牌时，在 PC 本机运行 `python server.py --reset-admin-token`。命令显示新令牌后退出，旧令牌和全部管理会话随即失效，已配对手机不受影响。`app/config/auth.sqlite3` 不得提交或分享；本机文件访问仍需操作系统权限保护。
+
+<a id="privacy-mode"></a>
+
+#### 4.3.8. 默认与隐私查看模式
+
+| 模式 / 身份 | 权限 |
+| --- | --- |
+| 默认模式访客 | 只查看实时画面与基础状态 |
+| 隐私模式访客 | 只能打开登录页面；画面与状态需管理员登录 |
+| 管理员 | 配置、录像、截图、日志、AI 事件、关闭服务和设备管理 |
+| 已配对 CamFlow | 仅上传图像，没有管理权限 |
+
+在 **Viewing mode** 选择模式并点击 **Apply**。更改模式会保存当前配置，即使 Autosave 关闭也会保存。隐私模式会停止既有匿名流，但不能收回已经查看或保存的画面。
+
+认证不等于传输加密。默认 HTTP 仅适用于可信局域网，不应直接暴露公网；不可信网络需配置 HTTPS。启用线上 AI 时，采样图像会发送给所选模型供应商。
+
+<a id="camera-pairing"></a>
+
+#### 4.3.9. 摄像头配对与撤销
+
+1. 管理员登录并点击 **Add CamFlow**。
+2. 在手机 Settings 输入服务器地址、设备名及 8 位配对码。
+3. 点击 **Pair / Re-pair**，再点击 **Save**，并在 Dashboard 开启 **Ingest**。
+
+配对码一次有效、5 分钟过期；生成新码会替换旧码。不要将管理员令牌填入手机。手机端操作详见 [CamFlow 配对说明](CamFlow_UserGuide_CN.md#camera-pairing)。
+
+Android Keystore 加密保存各设备凭据，绑定服务器地址并排除在备份之外；服务端只保存设备令牌摘要。点击某台设备的 **Revoke** 可使其凭据失效；更换服务器、清除本地凭据或被撤销后均需重新配对。
+
+多台已配对手机共用一个画面缓冲区，不会产生独立摄像头画面。上传被拒绝或停滞时，见[上传诊断](CamFlow_UserGuide_CN.md#upload-diagnostics)。
 
 ---
 
@@ -1636,7 +1656,7 @@ Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 
 - **CamFlow（Android 源码）版本**：v1.1.2
 - **仓库内 CamFlow APK 版本**：v1.1.2（debug-signed）
 - **本文档版本**：v1.1.4
-- **最后更新日期**：2026-09-26
+- **最后更新日期**：2026-09-27
 
 所有运行时版本统一定义于根目录 `version.properties`。PC 端通过 `app/version.py` 读取，供 Dashboard 页脚、启动信息和 `/api/version` 共用；Android Gradle 构建和设置页读取同一文件，不再单独硬编码版本号。该文件也记录当前 APK 路径与 SHA-256，自动测试会校验安装包和中英文 README 是否一致。
 
@@ -1646,7 +1666,11 @@ Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 
 
 ### 5.2. 测试环境说明 [⌃](#top)
 
-本系统在以下环境中完成测试与验证：
+69 项 Python 测试与 19 项 Android 单元测试通过；CI 亦通过 Windows／Linux 上的 Python 3.9／3.12 检查，以及 Android 单元测试和 APK 构建。覆盖权限、CSRF、配对与会话过期、设备撤销、录像保留／低磁盘、视频读写及 AI 状态转换／密钥轮换。
+
+CamFlow build 9 已完成基本真机复测。Keystore 设备测试已编译但尚未在设备执行，后台行为和长时间运行尚未完成专项验收，见[已知问题](#known-issues)。
+
+以下设备环境为历史测试记录，不代表每个版本的完整测试矩阵：
 
 - PC 端（Server + Dashboard）
   - **操作系统**：Windows 10 / Windows 11
@@ -1689,12 +1713,23 @@ Sentinel 项目基于 MIT License 开源发布。
 
 - 本项目用于 **学习、研究与技术验证** 目的，属于原型系统（prototype）。
 - 若将当前版本的系统用于真实生产环境或商业场景，请自行完善：
-  - 访问鉴权
+  - 在现有认证基础上，按部署场景完善访问控制
   - 传输加密
   - 日志脱敏与隐私合规策略
   - 稳定性与资源限额机制
 
 > 备注：CamFlow 作为摄像采集端，涉及图像数据采集与传输。请在使用前确保符合当地法律法规与场景授权要求。
+
+---
+
+<a id="sec55"></a>
+<a id="known-issues"></a>
+
+### 5.5. 已知问题 [⌃](#top)
+
+**已知问题：** 真机上传仍间歇性连接/响应超时，导致网页可能长时间不更新。
+
+根因尚未确认，请勿依赖当前版本进行需要连续可靠画面的监控。可通过 [CamFlow 上传诊断](CamFlow_UserGuide_CN.md#upload-diagnostics)区分配对、Ingest 与连接失败；分享信息时仅提供相关诊断行，不要发送令牌或配置文件。
 
 ---
 

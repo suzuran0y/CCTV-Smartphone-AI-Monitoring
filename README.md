@@ -12,56 +12,7 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
-🚀 Latest Update (ongoing): [v1.1.4 — 2026-09-26](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
-
-This update adds administrator authentication, default/privacy viewing modes, one-time CamFlow v1.1.2 pairing, recording retention and disk protection, and AI state-machine regression tests.
-
-**Known issue:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods.
-
-### v1.1.4 upgrade and setup
-
-Pairing help names the products without hardcoded release numbers; official version labels remain available in the Dashboard footer and CamFlow version/debug displays.
-
-1. Run `python server.py` in the project virtual environment. On first startup, the PC terminal displays the administrator token once. Save it securely; the server stores only a salted hash and never returns it through ordinary logs or configuration APIs.
-2. Open Dashboard, expand the top identity/mode row (**Login & camera pairing**) and sign in with the token. This panel is collapsed on each page load; expand it for login, logout and camera management. Administrator sessions last 8 hours and use a non-persistent HttpOnly / SameSite cookie. Log out explicitly: some browsers restore session cookies when restoring windows.
-3. Click **Add CamFlow** for an 8-character pairing code. In CamFlow v1.1.2 Settings, enter the server address, device name and code, tap **Pair / Re-pair**, then **Save**.
-4. The administrator enables **Ingest**, then optionally recording, snapshots or AI.
-
-To recover access, run `python server.py --reset-admin-token` on the PC. It displays a replacement token and exits. The old token and all administrator sessions immediately become invalid; paired cameras remain valid. Authentication data resides in `app/config/auth.sqlite3`; do not commit or share it. Users with direct filesystem access must still be controlled through OS permissions.
-
-| Mode / identity | Permission |
-| --- | --- |
-| Default-mode visitor | Live view and basic status only |
-| Privacy-mode visitor | Login page only; administrator login required for video and status |
-| Administrator | Configuration, recording, snapshots, logs, AI events, shutdown and device management |
-| Paired CamFlow | Image upload only, no management permissions |
-
-Choose **Viewing mode** and click **Apply**. Changing the mode persists the current configuration even with Autosave off. Privacy mode terminates existing unauthenticated streams; it cannot recall images visitors have already seen or saved.
-
-Pairing codes are single-use and expire after 5 minutes; generating another replaces the previous code. Android Keystore encrypts the device credential, which is bound to its server address and excluded from backups. The server stores only device-token hashes. Revoke individual cameras in Dashboard; changing servers, clearing local credentials or revocation requires re-pairing. There is still one shared stream: simultaneous uploads from multiple paired phones overwrite the same frame buffer, not separate camera feeds.
-
-**Compatibility:** CamFlow v1.1.0 / v1.1.1 cannot upload to this server; upgrade to v1.1.2. Never enter the administrator token on the phone. `/ping` checks reachability, not pairing. Authentication does not encrypt transport: default HTTP is for trusted LANs only, not direct public exposure. Configure HTTPS before using untrusted networks. Cloud AI still sends sampled images to the selected model provider.
-
-### Recording retention and disk protection
-
-| Setting | Default | Behavior |
-| --- | --- | --- |
-| `record_cleanup_enabled` | false | Explicit administrator confirmation enables permanent deletion of registered completed recordings |
-| `record_retention_days` | 7 | Expired recordings are removed first |
-| `record_max_storage_gb` | 20 GiB | Remove oldest completed recordings when over quota |
-| `record_min_free_gb` | 1 GiB | Stop/reject recording when disk space is low; display the reason in Dashboard |
-
-Cleanup only touches completed recordings registered by this version under the current Output Root's `videos` directory. It excludes active segments, snapshots, unregistered historical files and manually placed files, and refuses symlinks or Windows junctions. Deletion bypasses the recycle bin. Unregistered files still consume disk space and need separate management. Periodic quota enforcement is not a hard disk quota; an active segment can temporarily exceed it. Changing the output directory leaves previous directories for manual management.
-
-### Local validation and release status
-
-CamFlow v1.1.2 **build 9** clarifies resolution settings and diagnostics without changing capture sizes, encoding or upload behavior. **Resolution preference** offers Low / Medium / High, not guaranteed pixel dimensions; the camera chooses a supported size and different levels may produce the same size. Debug displays the selected preference and measured **Frame size** separately, clearing old dimensions when the camera restarts. No fixed-size resizing or additional cropping is applied.
-
-The experimental two-upload limit from build 8 remains; concurrent arrivals can be out of order. Build 9 has completed a basic real-device retest, with the upload timeout/slow refresh issue still unresolved. This is not a claim of reliable continuous monitoring.
-
-Python tests cover permission separation, CSRF, session/pairing expiry, revocation, retention/low disk, real video read/write, and AI trigger/dwell/grace/error recovery/key rotation. All 69 Python tests and 19 Android unit tests passed, and APK builds succeeded; Keystore device tests compiled but have not been run on a device. Background behavior and sustained operation have not undergone separate acceptance. Device environments listed later are historical records, not a complete v1.1.4 test matrix.
-
----
+🚀 Latest Update (ongoing): [v1.1.4 — 2026-09-27](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
@@ -121,6 +72,10 @@ This project can be used both as a lightweight local monitoring system and as an
   - [4.1. Start the PC Side](#sec41)
   - [4.2. Start CamFlow](#sec42)
   - [4.3. Dashboard Guide](#sec43)
+    - [Administrator access](#admin-access)
+    - [Default / privacy viewing modes](#privacy-mode)
+    - [Camera pairing and revocation](#camera-pairing)
+    - [Recording retention and disk protection](#recording-storage)
   - [4.4. AI Monitoring Features](#sec44)
   - [4.5. Dashboard AI Module Guide](#sec45)
   - [4.6. Third-party Model Integration](#sec46)
@@ -130,6 +85,7 @@ This project can be used both as a lightweight local monitoring system and as an
   - [5.2. Test Environment](#sec52)
   - [5.3. Roadmap](#sec53)
   - [5.4. Usage & License](#sec54)
+  - [5.5. Known Issues](#known-issues)
 
 ---
 
@@ -424,8 +380,8 @@ CamFlow transforms an ordinary smartphone into a real-time camera endpoint and:
 
 - Invokes the device's native camera
 - Continuously uploads frames in single JPEG format
-- Supports customizable upload frame rate and image quality (code-level interface)
-- Allows at most two outstanding uploads (experimental behavior retained from build 8), with status counters and no queued backlog
+- Configure upload rate, JPEG quality and [resolution preference](CamFlow_UserGuide.md#resolution-preference) in Settings
+- Allows at most two outstanding uploads, with status counters and no queued backlog; concurrent arrivals can be out of order
 
 ---
 
@@ -637,6 +593,8 @@ volcenginesdkarkruntime        # AI module dependency
 
 ### 3.4. Android-side Deployment [⌃](#top)
 
+**Compatibility:** use CamFlow v1.1.2 with this authenticated server; v1.1.0 / v1.1.1 cannot upload anonymously. Before deployment, review [known issues](#known-issues).
+
 The Android application CamFlow is responsible for camera capture and image upload.  
 The application source code is located in the repository path:
 
@@ -723,7 +681,7 @@ Default ingest: OFF (enable in dashboard)
 
 > ⚠️ Important: The camera device must use the LAN address. If the server starts successfully but ingest is not enabled, the Live View being empty is normal behavior.
 
-At this point, the PC-side service has started successfully.
+On first startup, the terminal also displays the administrator token once. Save it securely, then expand **Login & camera pairing** in Dashboard to sign in. Token recovery and session rules are described under [Administrator access](#admin-access).
 
 ---
 
@@ -750,9 +708,11 @@ You can change the address later in Settings. Use `Test connection` first, then 
 
 #### 4.2.3. Start Uploading (Push Frames)
 
-- Once the Server Address connection is successful, the app will automatically begin capturing and uploading camera data.
+1. Sign into Dashboard and click **Add CamFlow** to generate a pairing code.
+2. In CamFlow Settings, enter the server address, device name and code; tap **Pair / Re-pair**, then **Save**.
+3. The administrator enables **Ingest**. CamFlow captures and uploads while the camera is running and its credential remains valid.
 
-- Tap the upper-right corner of the app’s main interface to enter the settings page for further configuration.
+A successful **Test connection** only confirms reachability, not upload permission. See [camera pairing](#camera-pairing) and the phone-side [pairing procedure](CamFlow_UserGuide.md#camera-pairing).
 
 #### 4.2.4. PC-side Verification
 
@@ -760,7 +720,7 @@ You can change the address later in Settings. Use `Test connection` first, then 
 
 - Since `Ingest` is OFF by default, the Live View section will initially display `Ingest OFF - enable in dashboard` instead of the camera feed.
 
-- Click the `Enable Ingest` button to check whether the Live View displays video.  
+- After administrator login, click `Enable Ingest` to check whether Live View displays video.
   If no video appears, expand the Logs section under Live View (collapsed by default) and check for messages such as ingest disabled, then adjust settings accordingly.
 
 - Under normal conditions, once `Ingest` is switched to ON, the Live View section in the Dashboard will immediately update with the camera feed from the device.
@@ -774,7 +734,7 @@ For detailed usage instructions of CamFlow, please refer to the repository docum
 
 ### 4.3. Dashboard Guide [⌃](#top)
 
-> The Dashboard page consists of `dashboard.html + dashboard.js + style.css`, and its core data comes from backend APIs.
+> Dashboard uses `dashboard.html`, `access.js`, `dashboard.js` and `style.css`; data and access checks come from backend APIs. The controls below require administrator login. Visitors only receive the viewing access described in [Viewing modes](#privacy-mode).
 ---
 
 #### 4.3.1. Page Structure
@@ -783,7 +743,8 @@ The layout of the Dashboard is divided into three sections: top bar + left monit
 
 - **Top Bar**
   - Title: `Sentinel System Dashboard` & Subtitle: `Multi-Device Vision Monitoring & Risk Detection System`
-  - Button: `Shutdown`
+  - **Login & camera pairing**: collapsed by default; expand for sign-in, logout and device management
+  - Button: `Shutdown` (administrator only)
 - **Left Panel**
   - `Live View`: real-time video preview + quick control buttons
   - `Monitor Status`: system status summary + `Logs`: system logs
@@ -893,6 +854,7 @@ The table below explains configuration options available in the Dashboard.
 
 | Configuration | Format | Purpose | Recommended Range |
 |------|----------|------|--------------|
+| **Viewing mode** | Default / Privacy | Controls visitor access | See [viewing modes](#privacy-mode); changing this setting persists configuration even with Autosave off. |
 | **Stream FPS** | Number (frames/sec) | Controls MJPEG refresh rate in browser | Recommended 8–15. Too high increases CPU and bandwidth usage; below 5 causes noticeable lag. |
 | **JPEG Quality** | Number | Controls JPEG compression quality | Recommended 60–80. Too low causes blur; too high significantly increases CPU load at high FPS. |
 | **Record FPS** | Number (frames/sec) | Controls recording frame rate | Recommended 10–15. Too high increases disk pressure and file size; below 8 reduces smoothness. |
@@ -937,10 +899,68 @@ For detailed information, refer to [4.4. AI Monitoring Features](#sec44).
 
 ---
 
+<a id="recording-storage"></a>
+
+##### 4.3.5.1. Recording Retention and Disk Protection
+
+| Setting | Default | Behavior |
+| --- | --- | --- |
+| `record_cleanup_enabled` | false | Explicit administrator confirmation enables permanent deletion of registered completed recordings |
+| `record_retention_days` | 7 | Expired recordings are removed first |
+| `record_max_storage_gb` | 20 GiB | Remove oldest completed recordings when over quota |
+| `record_min_free_gb` | 1 GiB | Stop/reject recording when disk space is low; display the reason in Dashboard |
+
+Cleanup only touches completed recordings registered by this version under the current Output Root's `videos` directory. It excludes active segments, snapshots, unregistered historical files and manually placed files, and refuses symlinks or Windows junctions. Deletion bypasses the recycle bin. Unregistered files still consume disk space and need separate management. Periodic quota enforcement is not a hard disk quota; an active segment can temporarily exceed it. Changing the output directory leaves previous directories for manual management.
+
+Adjust these fields in Settings and click **Apply** as an administrator; enabling cleanup requires confirmation of permanent deletion.
+
+---
+
 #### 4.3.6. Shutdown
 
 > ⚠️ This is the “terminate service” button.  
 > The top `Shutdown` button triggers the system shutdown procedure: stop recording, disable ingest, stop the Python service, and attempt to close the page.
+
+---
+
+<a id="admin-access"></a>
+
+#### 4.3.7. Administrator Access and Token Recovery
+
+Expand the top **Login & camera pairing** row and enter the administrator token printed once by the PC on first startup. The row starts collapsed on every page load and also contains logout and device-management controls.
+
+The server stores a salted token hash, not the plaintext token. Administrator sessions last 8 hours and use a non-persistent HttpOnly / SameSite cookie. Log out explicitly: some browsers restore session cookies when restoring windows.
+
+To recover access, run `python server.py --reset-admin-token` locally on the PC. It prints a replacement token and exits; the old token and all administrator sessions become invalid, while paired cameras remain valid. Keep `app/config/auth.sqlite3` private and out of version control. Local filesystem access still needs OS permissions.
+
+<a id="privacy-mode"></a>
+
+#### 4.3.8. Default and Privacy Viewing Modes
+
+| Mode / identity | Permission |
+| --- | --- |
+| Default-mode visitor | Live view and basic status only |
+| Privacy-mode visitor | Login page only; video and status require administrator login |
+| Administrator | Configuration, recording, snapshots, logs, AI events, shutdown and device management |
+| Paired CamFlow | Image upload only, no management permissions |
+
+Select **Viewing mode** and click **Apply**. Changing the mode saves the current configuration even with Autosave off. Privacy mode stops existing anonymous streams; it cannot recall images already viewed or saved.
+
+Authentication does not encrypt transport. Default HTTP is for trusted LANs, not direct public exposure; configure HTTPS for untrusted networks. Cloud AI sends sampled images to the selected model provider.
+
+<a id="camera-pairing"></a>
+
+#### 4.3.9. Camera Pairing and Revocation
+
+1. Sign in as administrator and click **Add CamFlow**.
+2. Enter the 8-character code in the phone's Settings together with its server address and device name.
+3. Tap **Pair / Re-pair**, then **Save**, and enable **Ingest** in Dashboard.
+
+Codes are single-use and expire after 5 minutes; generating a new code replaces the previous one. Never enter the administrator token on the phone. Follow the [CamFlow pairing guide](CamFlow_UserGuide.md#camera-pairing) for phone-side operations.
+
+Android Keystore encrypts each device credential, binds it to its server address and excludes it from backups. The server stores only device-token hashes. Click **Revoke** for an individual camera to invalidate its credential. Changing servers, clearing local credentials or revocation requires pairing again.
+
+Multiple paired phones share one frame buffer; they do not create independent camera feeds. See [upload diagnostics](CamFlow_UserGuide.md#upload-diagnostics) for rejected or stalled uploads.
 
 ---
 
@@ -1645,7 +1665,7 @@ The current version information is as follows:
 - **CamFlow (Android source) Version**: v1.1.2
 - **Bundled CamFlow APK Version**: v1.1.2 (debug-signed)
 - **Documentation Version**: v1.1.4
-- **Last Updated**: 2026-09-26
+- **Last Updated**: 2026-09-27
 
 All runtime versions are defined once in the root `version.properties`. The PC loads it through `app/version.py` for the Dashboard footer, startup output, and `/api/version`; the Android Gradle build and settings page read the same file instead of keeping separate hardcoded versions. The file also records the current APK path and SHA-256, and automated tests verify that the package matches both READMEs.
 
@@ -1655,7 +1675,11 @@ All runtime versions are defined once in the root `version.properties`. The PC l
 
 ### 5.2. Test Environment [⌃](#top)
 
-The system has been tested and validated under the following environments:
+All 69 Python tests and 19 Android unit tests passed. CI also passed Python 3.9 / 3.12 on Windows / Linux and Android unit tests plus APK builds. Coverage includes permissions, CSRF, pairing/session expiry, device revocation, recording retention/low disk, video read/write, and AI state transitions/key rotation.
+
+CamFlow build 9 completed a basic real-device retest. Keystore instrumentation tests were compiled but have not run on a device; background behavior and sustained operation have not completed separate acceptance. See [known issues](#known-issues).
+
+The following device environments are historical records, not a complete test matrix for every release:
 
 - PC Side (Server + Dashboard)
   - **Operating System**: Windows 10 / Windows 11
@@ -1700,13 +1724,24 @@ Copyright © 2026 Suzuran0y
 
 - This project is intended for **learning, research, and technical validation** purposes and is a prototype system.
 - If deploying the current version in a real production or commercial environment, you must implement additional measures:
-  - Access authentication
+  - Deployment-specific access controls beyond the built-in authentication
   - Transmission encryption
   - Log desensitization and privacy compliance policies
   - Stability and resource limitation mechanisms
 
 > Note: CamFlow involves image data capture and transmission.  
 > Ensure compliance with local laws and obtain appropriate authorization before use.
+
+---
+
+<a id="sec55"></a>
+<a id="known-issues"></a>
+
+### 5.5. Known Issues [⌃](#top)
+
+**Known issue:** real-device uploads still intermittently time out during connection or response handling, which may leave the web image unchanged for extended periods.
+
+The cause remains unconfirmed; do not rely on the current build for uninterrupted monitoring. Use [CamFlow upload diagnostics](CamFlow_UserGuide.md#upload-diagnostics) to distinguish pairing, Ingest and connection failures. Share only relevant diagnostic lines, never tokens or configuration files.
 
 ---
 

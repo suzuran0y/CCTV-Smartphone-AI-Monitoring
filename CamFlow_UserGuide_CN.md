@@ -3,16 +3,6 @@
 
 # CamFlow 使用说明
 
-> **v1.1.2 配对流程（Sentinel v1.1.4）：** 管理员先在 PC Dashboard 登录并点击 **Add CamFlow**，再在手机 Settings 输入服务器地址、设备名称及 8 位配对码，点击 **Pair / Re-pair** 后点击 **Save**。配对码一次有效、5 分钟后过期。管理员还需要开启 Ingest。管理令牌只在 PC 使用，不要填入手机。
->
-> 手机通过 Android Keystore 加密保存上传凭据，并绑定当前服务器地址。**Clear local credentials** 仅清除手机凭据；要使令牌在服务器失效，还需管理员在 Dashboard 点击 **Revoke**。更换服务器或被撤销后重新配对。`401/403` 表示需要配对，`503` 表示管理员尚未开启 Ingest。连接测试成功仅代表服务器可达。
->
-> 新服务器不接受 v1.1.0 / v1.1.1 的匿名上传。默认模式允许访客看画面，隐私模式要求管理员登录；两种模式都要求手机配对。HTTP 仅适用于可信局域网，不提供传输加密。此预发布 APK 已完成构建和单元测试，用户已重新安装并测试 build 9，确认除下述上传问题外本轮更新目标已完成。长时间运行和 Keystore 设备测试尚未完成专项真机验收，后文测试设备为历史记录。
->
-> **已知问题 — 待解决：** 真机上传仍间歇性连接/响应超时，导致网页可能长时间不更新。
-
-**Resolution preference（分辨率偏好，build 9）：** Low / Medium / High 表达采集偏好，不代表固定输出尺寸；设备可能为不同档位选择相同的支持尺寸。Debug 例如显示 `Resolution preference: Low` 和 `Frame size: 480x480`，不再将内部请求尺寸当作输出尺寸。Frame size 来自当前相机裁剪区域（JPEG 编码也使用此区域），不代表服务器已经收到图片；上传忙碌时仍更新，切换档位后先清除旧尺寸，收到新帧才显示。本次不增加缩放、拉伸、补边或额外裁剪。
-
 [![Version](https://img.shields.io/badge/version-v1.1.2-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide_CN.md)
 [![Role](https://img.shields.io/badge/role-Client-blue)](README_CN.md)
@@ -35,10 +25,14 @@
 - [2. 使用流程](#sec2)
   - [2.1. 启动与界面](#sec21)
   - [2.2. 连接服务器](#sec22)
+    - [配对与凭据管理](#camera-pairing)
   - [2.3. 设置页](#sec23)
+    - [分辨率偏好与实测尺寸](#resolution-preference)
+    - [上传状态与诊断](#upload-diagnostics)
   - [2.4. 使用步骤](#sec24)
 
 - [3. 常见问题](#sec3)
+  - [已知上传问题](#known-issues)
 
 - [4. 开发者文档](#sec4)
   - [4.1. 实现框架](#sec41)
@@ -141,6 +135,8 @@ CamFlow 主要功能包括：
 
 ### 1.3. 安装方式 [⌃](#top)
 
+Sentinel v1.1.4 需搭配 CamFlow v1.1.2。旧 v1.1.0／v1.1.1 客户端无法向认证服务器上传，部署前请阅读[已知问题](#known-issues)。
+
 #### 1.3.1. 普通用户安装（APK 安装包）
 > 适用于“使用者/部署者”。
 
@@ -160,6 +156,8 @@ CamFlow 主要功能包括：
 <a id="sec2"></a>
 
 ## 2. 使用流程 [⌃](#top)
+
+<a id="sec21"></a>
 
 ### 2.1. 启动与界面 [⌃](#top)
 打开 CamFlow 后，进入主界面。若尚未连接服务器，通常显示为未连接状态（如图1）。
@@ -206,7 +204,24 @@ CamFlow 主要功能包括：
     - `192.168.1.10:xxxx`（显式指定端口）
 
 - **Connect**
-  - 连接测试。若连接后 Dashboard 仍无画面，优先检查 PC 端是否启用了 ingest（接收开关）以及防火墙端口。
+  - 仅测试服务器可达性，不代表具有上传权限。若仍无画面，先确认[配对](#camera-pairing)有效、PC 端已开启 Ingest，再检查网络与端口。
+
+---
+
+<a id="camera-pairing"></a>
+
+#### 2.2.2. 配对与凭据管理
+
+1. 请管理员在 PC Dashboard 登录并点击 **Add CamFlow**。
+2. 在手机 Settings 填写服务器地址、设备名及 8 位配对码。
+3. 点击 **Pair / Re-pair**，成功后再点击 **Save**。
+4. 管理员开启 **Ingest**，手机保持相机运行以进行上传。
+
+配对码一次有效、5 分钟过期；生成新码会替换旧码。管理员令牌仅在 PC 使用，切勿填入手机。
+
+Android Keystore 加密保存上传凭据，绑定服务器地址并排除在备份之外。**Clear local credentials** 仅清除手机上的副本；要在服务器撤销凭据，管理员需在 Dashboard 点击 **Revoke**。更换服务器、清除凭据或被撤销后需要重新配对。
+
+默认与隐私模式均要求手机配对。默认模式允许访客只读查看，隐私模式要求管理员登录后查看，见 [Dashboard 查看模式](README_CN.md#privacy-mode)。HTTP 认证不提供传输加密，请使用可信局域网或 HTTPS。多台已配对手机仍共享一路画面。
 
 ---
 
@@ -215,11 +230,16 @@ CamFlow 主要功能包括：
 ### 2.3. 设置页 [⌃](#top)
 点击 **主界面右上角** 进入设置页，完成服务器配置、连接测试与运行开关设置。
 
-#### 设置页字段定义与功能说明
+#### 2.3.1. 设置字段与控件
 
 | 字段 | 类型 | 格式 | 功能说明 |
 |------|------|---------------|----------|
 | Server address | 文本输入 | IPv4 或 IPv4:Port | 指定目标服务器地址，手动连接服务器 |
+| Device name | 文本输入 | 1–80 字符 | Dashboard 设备管理中显示的名称 |
+| Pairing code | 文本输入 | 8 位配对码 | 管理员生成的一次性代码 |
+| Upload image quality | 选择 | Low / Medium / High | JPEG 质量 35 / 55 / 75；数值越高，文件通常越大 |
+| Upload rate | 选择 | Low / Medium / High | 最小发送间隔 500 / 250 / 120 ms；实际成功帧率还取决于采集和上传耗时 |
+| Resolution preference | 选择 | Low / Medium / High | 采集尺寸偏好，不保证固定像素；见[分辨率显示](#resolution-preference) |
 
 ---
 
@@ -227,6 +247,8 @@ CamFlow 主要功能包括：
 |------|------|---------------|----------|
 | Test connection | 点击 | 成功 / 失败 | 向服务器发送可达性测试请求（如 `/ping`）|
 | Save | 点击 | 保存成功 | 使用当前服务器地址与设置 |
+| Pair / Re-pair | 点击 | 成功 / 失败 | 使用有效配对码获取设备凭据，成功后仍需点击 Save |
+| Clear local credentials | 点击 | 已清除本地凭据 | 不会撤销服务端凭据，见[配对说明](#camera-pairing) |
 
 ---
 
@@ -237,6 +259,44 @@ CamFlow 主要功能包括：
 | Stop camera | ON / OFF | 停止画面采集与上传 | 降低功耗 / 临时暂停 |
 
 >  Stop camera = `ON` 时，系统会自动启用 Hide preview，避免画面残留。
+
+---
+
+<a id="resolution-preference"></a>
+
+#### 2.3.2. 分辨率偏好与实测图像尺寸
+
+Low / Medium / High 表达采集分辨率偏好，不代表固定输出尺寸。相机会选择设备支持的尺寸，不同档位也可能得到相同结果。例如 Debug 可以显示：
+
+```text
+Resolution preference: Low
+Frame size: 480x480
+```
+
+Frame size 来自当前相机裁剪区域，也是 JPEG 编码使用的尺寸，不代表服务器已经收到图像。上传忙碌时读数仍会更新；切换档位会清除旧尺寸，收到新帧后才重新显示。不进行固定尺寸缩放、拉伸、补边或额外裁剪。
+
+<a id="upload-diagnostics"></a>
+
+#### 2.3.3. 上传状态与诊断
+
+在设置页开启 **Show debug info**，返回摄像界面查看。
+
+| 字段 / 结果 | 含义与处理 |
+| --- | --- |
+| `OK (200)` / `ok` | 上传已接受；观察成功次数是否持续增加 |
+| `401/403` | 需要配对、凭据无效或已撤销；获取新码重新配对 |
+| `503` | 请管理员开启 Ingest |
+| `failed` | 上传失败计数；结合状态及网络阶段判断 |
+| `dropped` | 上传名额忙碌时跳过的候选帧，不是网络丢包数 |
+| `Concurrency` | 最多两笔在途上传，不排队积压旧帧；可能乱序到达 |
+| `Encode` | JPEG 转换／压缩耗时 |
+| `Last completed` / `Active` | 已完成与活动请求的编号；比较耗时不能混用不同编号 |
+| `connecting` / `sending image` / `waiting response` | 客户端观察到的阶段，不代表已送达或已确认故障根因 |
+| `Server processing` | 响应头返回的服务端耗时；`unknown` 不等于 0 |
+
+连接超时为 3 秒，读／写超时各 4 秒，整笔请求上限为 5 秒；失败的旧帧不自动重放。这些限制用于约束等待，并不能修复故障根因。
+
+可用请求编号关联 PC 的 `log/server.log` 中的 `upload begin/end` 行。分享时只摘取相关行，不发送令牌、认证数据库或整份配置。若配对有效、Ingest 已开启仍持续超时，见[已知问题](#known-issues)。
 
 ---
 
@@ -254,24 +314,24 @@ CamFlow 主要功能包括：
 
 #### 2.4.2. 部署流程
 
-1. **启动 PC 端 Sentinel 服务**；
-2. 启动成功则能自动返回服务器IP地址`<PC_IP>:xxxx`；
-3. 可通过在手机端浏览器访问 `http://<PC_IP>:xxxx/ping`，若返回 `OK` 字段则启动成功；
-4. 手机与 PC 连接到 **同一 Wi-Fi**；
-5. 打开 CamFlow ，等待一段时间，由程序自动寻找服务器；
-6. 若成功则自动写入地址，与PC端建立联系；
-7. 若失败则在弹出提示框中手动输入IP地址；
-8. 观察 `Status` 是否变为 `Connected`；
-9. 若连接成功，可点击主页面右上角进入设置页进行配置修改；
-10. 打开 PC 端 Dashboard（进入返回的网址`http://<PC_IP>:xxxx/`）；
-11. 点击 `Enable Ingest` 按钮，确认接收功能开启；
-11. 观察到 Live View 窗口更新摄像端画面，则 CamFlow 成功正常运行。
+1. 在 PC 启动 Sentinel，保存首次显示的管理员令牌，并找到 `CamFlow: <PC_IP>:<PORT>`。
+2. 手机与 PC 连接同一可信局域网，在 App 填写该地址并测试连接。
+3. 管理员在 Dashboard 登录，点击 **Add CamFlow** 生成配对码。
+4. 在手机 Settings 填写设备名与配对码，点击 **Pair / Re-pair**，成功后点击 **Save**。
+5. 管理员点击 **Enable Ingest**，手机保持相机运行。
+6. 检查手机 `ok` 是否持续增长，以及 Dashboard 的 Live View 和 Last frame age 是否持续更新；仅显示 Connected 不代表上传成功。
+7. 若失败，按[上传诊断](#upload-diagnostics)检查配对、Ingest、请求阶段和[已知问题](#known-issues)。
 
 ---
 
 <a id="sec3"></a>
 
 ## 3. 常见问题 [⌃](#top)
+
+<a id="known-issues"></a>
+
+**已知问题：** 真机上传仍间歇性连接/响应超时，导致网页可能长时间不更新。根因尚未确认，请勿依赖当前版本进行需要连续可靠画面的监控；降低档位不保证恢复。详见[上传诊断](#upload-diagnostics)。
+
 
 <details>
 <summary><strong>首次使用时应填写哪个地址？</strong></summary>
@@ -319,7 +379,7 @@ CamFlow 主要功能包括：
 - PC Dashboard 的 Live View 窗口不更新。
 
 **可能原因**
-1. 第一次启用 CamFlow 时，应用的设置内容未激活
+1. 尚未完成设备配对、凭据已撤销，或隐私模式要求浏览器先以管理员登录
 2. PC Dashboard 未开启 ingest 功能（接收开关关闭）
 3. 上传接口路径或字段名不匹配（例如服务端期望字段名与客户端不一致）
 4. 上传成功但被服务端限流/丢弃（日志可见）
@@ -328,10 +388,10 @@ CamFlow 主要功能包括：
 **排查步骤**
 1. 在 PC 端查看是否收到 `/upload` 请求
 2. 刷新 Dashboard 页面，确认 ingest 开关状态
-3. 降低发送压力：增大 Interval（例如 200~300ms）观察是否恢复
+3. 按[上传诊断](#upload-diagnostics)查看状态码和请求阶段；降低上传档位可以减轻负载，但不保证解决[已知超时问题](#known-issues)
 
 **解决方案**
-- 点击右上角进入设置页，更新设置信息并保存；
+- 若尚未配对或凭据已撤销，获取新配对码，点击 **Pair / Re-pair** 后 **Save**；
 - 确认开启 ingest 功能；
 - 对齐服务端接口契约（路径、字段名、端口）；
 - 调整发送间隔/分辨率/质量参数以适应网络与 PC 性能。
@@ -582,6 +642,8 @@ CamFlow:    192.168.1.10:8000    enter this address manually in the app
     → 首次启动弹窗或设置页中填入
     → GET /ping 测试连接
     → 保存地址
+    → 使用管理员生成的配对码完成配对
+    → 管理员开启 Ingest
     → POST /upload 上传图像
 ```
 
@@ -609,7 +671,9 @@ CamFlow:    192.168.1.10:8000    enter this address manually in the app
 
 ### 5.2. 测试环境说明 [⌃](#top)
 
-本系统在以下环境中完成测试：
+本地验证通过 19 项 Android 单元测试及主 APK／设备测试 APK 构建，Android CI 亦已通过。build 9 已完成基本真机复测；Keystore 设备测试尚未在设备执行，长时间／后台运行未完成专项验收，[上传问题](#known-issues)仍待解决。
+
+以下环境为历史测试记录，不代表当前版本的完整测试矩阵：
 
 ### Android 端
 
