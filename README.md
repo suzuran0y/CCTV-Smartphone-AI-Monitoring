@@ -1787,4 +1787,4 @@ The cause remains unconfirmed; do not rely on the current build for uninterrupte
 
 ### Star History [⌃](#top)
 
-[![Star History Chart](https://api.star-history.com/svg?repos=suzuran0y/CCTV-Smartphone-AI-Monitoring&type=Date)](https://star-history.com/#suzuran0y/CCTV-Smartphone-AI-Monitoring&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=suzuran0y/CCTV-Smartphone-AI-Monitoring&type=Date)](https://star-history.dera.page/#suzuran0y/CCTV-Smartphone-AI-Monitoring&Date)
