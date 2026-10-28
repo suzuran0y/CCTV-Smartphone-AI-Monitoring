@@ -86,6 +86,9 @@ async function refreshConfigForm() {
   setVal("record_retention_days", cfg.json.record_retention_days);
   setVal("record_max_storage_gb", cfg.json.record_max_storage_gb);
   setVal("record_min_free_gb", cfg.json.record_min_free_gb);
+  setVal("frame_stale_seconds", cfg.json.frame_stale_seconds);
+  setVal("record_gap_seconds", cfg.json.record_gap_seconds);
+  setVal("record_auto_resume", String(cfg.json.record_auto_resume));
   setVal("ai_provider", cfg.json.ai_provider);
   setVal("ai_model", cfg.json.ai_model);
   setVal("ai_base_url", cfg.json.ai_base_url);
@@ -167,10 +170,38 @@ function _pill(text, cls){
   return `<span class="pill ${cls}">${text}</span>`;
 }
 
+let streamBroken = false;
+let lastStreamRetry = 0;
+
+function showFrameState(state, age) {
+  const el = document.getElementById("frameState");
+  if (!el) return;
+  const labels = {live: "Live — receiving camera frames", stale: "Stale — no recent camera frames",
+    waiting: "Waiting for camera frames", disabled: "Ingest is off", unavailable: "Server unavailable — camera status unknown"};
+  el.textContent = (labels[state] || labels.unavailable) + (state === "stale" && age != null ? ` · Last frame ${age}s ago` : "");
+  el.dataset.state = state;
+}
+
+document.getElementById("live")?.addEventListener("error", () => {
+  streamBroken = true;
+  showFrameState("unavailable");
+});
+
 async function refreshStatusOnly() {
   if (!accessReady || (accessState.viewer_auth_required && !accessState.admin)) return;
-  const st = await fetchJson("/api/status");
-  if (st.status !== 200 || !st.json) return;
+  let st;
+  try { st = await fetchJson("/api/status", {cache: "no-store"}); }
+  catch (_) { showFrameState("unavailable"); return; }
+  if (st.status !== 200 || !st.json) { showFrameState("unavailable"); return; }
+  // A privacy change may happen while this status request is in flight.
+  if (accessState.viewer_auth_required && !accessState.admin) return;
+  showFrameState(st.json.frame_state, st.json.last_frame_age_sec);
+  const live = document.getElementById("live");
+  if (streamBroken && Date.now() - lastStreamRetry >= 5000) {
+    lastStreamRetry = Date.now();
+    streamBroken = false;
+    live.src = "/stream?reconnect=" + lastStreamRetry;
+  }
   const box = document.getElementById("status_readable");
   if (!box) return;
   ingestOn = !!st.json.ingest_enabled;
@@ -179,7 +210,7 @@ async function refreshStatusOnly() {
   syncRecordBtn();
   const recOn = !!st.json.recording;
   const ingestP = ingestOn ? _pill("ON", "ok") : _pill("OFF", "warn");
-  const recP = recOn ? _pill("ON", "ok") : _pill("OFF", "warn");
+  const recP = recOn ? _pill(st.json.recording_waiting_for_frames ? "WAITING FOR FRAMES" : "ON", st.json.recording_waiting_for_frames ? "warn" : "ok") : _pill("OFF", "warn");
   const lastAge = (st.json.last_frame_age_sec === null || st.json.last_frame_age_sec === undefined)
     ? "—"
     : `${st.json.last_frame_age_sec}s`;
@@ -617,6 +648,9 @@ async function applyConfig() {
     record_retention_days: Number(document.getElementById("record_retention_days").value),
     record_max_storage_gb: Number(document.getElementById("record_max_storage_gb").value),
     record_min_free_gb: Number(document.getElementById("record_min_free_gb").value),
+    frame_stale_seconds: Number(document.getElementById("frame_stale_seconds").value),
+    record_gap_seconds: Number(document.getElementById("record_gap_seconds").value),
+    record_auto_resume: document.getElementById("record_auto_resume").value === "true",
     stream_fps: parseInt(document.getElementById("stream_fps").value),
     jpeg_quality: parseInt(document.getElementById("jpeg_quality").value),
     record_fps: parseInt(document.getElementById("record_fps").value),
@@ -667,6 +701,7 @@ async function applyConfig() {
   await refreshConfigForm();
   await refreshAccess();
   await refreshStatusOnly();
+  if (document.getElementById("mediaPanel").open) await refreshMedia(true);
 }
 
 async function saveConfig() {

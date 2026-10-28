@@ -104,3 +104,20 @@ def test_storage_guard_runs_before_new_segment(tmp_path):
     with pytest.raises(OSError, match="disk full"):
         recorder.write(np.zeros((48, 64, 3), dtype=np.uint8))
     assert recorder.writer is None
+
+
+def test_resolution_change_closes_segment_before_writing_new_size(tmp_path):
+    recorder = SegmentRecorder(out_root=str(tmp_path / "videos"), codec="MJPG")
+    recorder.write(np.zeros((48, 64, 3), dtype=np.uint8))
+    first = recorder.current_path
+    recorder.write(np.zeros((64, 80, 3), dtype=np.uint8))
+    second = recorder.current_path
+    recorder.stop()
+    assert first != second
+    for path, expected in [(first, (48, 64, 3)), (second, (64, 80, 3))]:
+        capture = cv2.VideoCapture(path)
+        try:
+            ok, frame = capture.read()
+            assert ok and frame.shape == expected
+        finally:
+            capture.release()

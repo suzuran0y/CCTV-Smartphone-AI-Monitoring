@@ -57,6 +57,8 @@ def record_loop(cfg_store, frame_buf, rec_rt, logger, stop_event) -> None:
         is_recording = bool(cfg.get("recording", False))
         if not is_recording:
             stop_recorder(rec_rt, logger)
+            with rec_rt.lock:
+                rec_rt.waiting_for_frames = False
             time.sleep(0.05)
             continue
 
@@ -69,10 +71,24 @@ def record_loop(cfg_store, frame_buf, rec_rt, logger, stop_event) -> None:
 
         interval = 1.0 / max(1, record_fps)
 
-        frame = frame_buf.get_copy()
-        if frame is None:
-            time.sleep(0.01)
+        frame, age, _ = frame_buf.snapshot()
+        interrupted = not cfg.get("ingest_enabled") or age is None or age >= cfg.get("record_gap_seconds", 5)
+        if interrupted:
+            stop_recorder(rec_rt, logger)
+            with rec_rt.lock:
+                was_waiting = rec_rt.waiting_for_frames
+                rec_rt.waiting_for_frames = True
+            if not was_waiting:
+                logger.info("recording paused: waiting for fresh camera frames")
+            if not cfg.get("record_auto_resume", True):
+                cfg_store.set_key("recording", False)
+                with rec_rt.lock:
+                    rec_rt.recording_start_ts = None
+                    rec_rt.waiting_for_frames = False
+            stop_event.wait(0.05)
             continue
+        with rec_rt.lock:
+            rec_rt.waiting_for_frames = False
 
         now = time.time()
         if (now - last_write) < interval:
@@ -97,6 +113,8 @@ def record_loop(cfg_store, frame_buf, rec_rt, logger, stop_event) -> None:
                 with rec_rt.lock:
                     if cfg_store.get_copy().get("recording"):
                         rec_rt.rec = r
+                    else:
+                        r.stop()
                 logger.info("SegmentRecorder created")
             except Exception as e:
                 logger.error(f"create SegmentRecorder failed: {e}")
@@ -106,7 +124,7 @@ def record_loop(cfg_store, frame_buf, rec_rt, logger, stop_event) -> None:
         try:
             with rec_rt.lock:
                 r = rec_rt.rec
-                if r is not None:
+                if r is not None and cfg_store.get_copy().get("recording"):
                     r.write(frame)
         except Exception as e:
             with rec_rt.lock:

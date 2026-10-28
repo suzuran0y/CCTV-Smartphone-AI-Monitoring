@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.4-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.5-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,7 +12,7 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
-🚀 Latest Update (ongoing): [v1.1.4 — 2026-09-27](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 Latest Update (ongoing): [v1.1.5 — 2026-10-29](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
@@ -604,8 +604,6 @@ The precompiled APK file is located at:
 PhoneCamSender/CamFlow-v1.1.2.apk
 ```
 
-> The current bundled package is CamFlow v1.1.2 build 9 (debug-signed, resolution display clarification), SHA-256: `EBBD242B5C1660607D45808480895D8F88F71F106B6A64CE7CE2E3FC726F58E5`. Legacy packages remain until v1.1.2 device acceptance is complete.
-
 #### 3.4.1. Quick Installation via APK (Recommended)
 
 For general users, installing via the APK file is the most convenient method:
@@ -805,6 +803,9 @@ The table below provides a structured explanation of core fields:
 | **Upload FPS** | Number (frames/sec) | Estimated upload frame rate | Close to 0 → CamFlow not uploading or Ingest is OFF |
 | **Stream FPS** | Number (frames/sec) | Browser MJPEG refresh rate | Reduce if browser lags; too high increases CPU usage |
 | **JPEG Quality** | Number (0–100) | Preview image compression quality | Higher quality = clearer image but higher load; high quality + high FPS may cause performance pressure |
+| **Frame stale after (sec)** | Seconds | Mark the image stale after no new frames | Default 5; range 1–120. |
+| **Pause recording after no frames (sec)** | Seconds | Close the current recording segment after a gap | Default 5; range 1–300. |
+| **Resume recording after camera returns** | Automatic / Manual | Open a new segment on recovery, or stop until manually started | Default Automatic. |
 | **Record FPS** | Number (frames/sec) | Recording frame rate | Too high increases disk pressure; too low results in choppy video |
 | **Segment Seconds** | Number (seconds) | Video segmentation duration | Reduce if files become too large; too small generates many files |
 | **Recording file** | String (file path) | Current video file being written | If `Recording = ON` but empty → recording thread not functioning properly |
@@ -957,6 +958,34 @@ Codes are single-use and expire after 5 minutes; generating a new code replaces 
 Android Keystore encrypts each device credential, binds it to its server address and excludes it from backups. The server stores only device-token hashes. Click **Revoke** for an individual camera to invalidate its credential. Changing servers, clearing local credentials or revocation requires pairing again.
 
 Multiple paired phones share one frame buffer; they do not create independent camera feeds. See [upload diagnostics](CamFlow_UserGuide.md#upload-diagnostics) for rejected or stalled uploads.
+
+---
+
+<a id="frame-freshness"></a>
+
+#### 4.3.10. Frame Freshness and Recording Recovery
+
+Below Live View, the page identifies live frames, waiting for frames, Ingest off, or stale frames. By default, 5 seconds without a new frame marks the image stale; the stream itself also overlays STALE on the old image. Fresh uploads automatically restore live state. Failed status requests show that the server is unavailable rather than labeling an old image live. Snapshots require a fresh frame.
+
+Configure **Frame stale after (sec)** and **Pause recording after no frames (sec)** independently in Settings, then click Apply. By default, recording closes its current segment after a 5-second gap and waits. With **Resume recording after camera returns** set to Automatic, fresh frames start a new segment; Manual stops recording until Start Recording is pressed. No old image is recorded when Ingest is off or no frame exists. Disk protection and manual Stop do not automatically restart recording.
+
+Within the threshold, the latest frame is still written at Record FPS. The recording does not fill the entire outage with a still image; segments before and after recovery remain separate files.
+
+<a id="shared-stream"></a>
+
+#### 4.3.11. Multiple Viewers and Shared Encoding
+
+Browsers viewing the same feed reuse the JPEG for the same frame and JPEG Quality. New frames, image-state transitions or quality changes refresh the encoded result. Stream FPS still controls each connection's send rate, and each viewer still consumes bandwidth. Encoding uses a separate lock and does not hold the upload frame-buffer lock.
+
+<a id="media-library"></a>
+
+#### 4.3.12. Browse and Download Recordings and Snapshots
+
+After administrator login, expand **Recordings & Snapshots** on the left. Select Recordings or Snapshots, click Refresh, and use Previous / Next for pages of up to 25 items. The list shows filenames, modification times, sizes and Download links, newest modified first. No deletion controls are provided.
+
+Only recordings and snapshots under the current Output Root that follow the system's filename rules are listed, including matching historical files. The active recording segment is hidden and cannot be downloaded; refresh after it closes. Downloads require administrator login; visitors and paired phones cannot access them. Symbolic links and Windows junctions are rejected.
+
+Changing Output Root switches the browser to that directory; old directories remain on disk. Cleanup may remove a listed file before download, in which case refresh the list. Listing a historical file does not register it for automatic cleanup.
 
 ---
 
@@ -1600,52 +1629,6 @@ Only output one JSON object. Do not output markdown or extra explanations.
 
 ---
 
-#### 4.6.12. Verification and Tests
-
-Automated tests have been added for this module, covering:
-
-- Provider configuration resolution;
-- Ark legacy field compatibility;
-- Base URL resolution to `/chat/completions`;
-- OpenAI-compatible response parsing;
-- sanitized model information output;
-- Dashboard Provider configuration fields and Model Info container rendering;
-- `/api/config` generic Provider updates taking effect in `/api/ai/status`;
-- a complete request chain against a local fake OpenAI-compatible vision service.
-- image upload enablement, decode failures, and the 8 MB limit;
-- recorder codec-open failures, automatic fallback, and reuse of the working codec;
-- configuration logs not exposing real API keys;
-- Android server-address normalization and invalid-address rejection.
-- version consistency across the Dashboard, version API, Gradle, and both READMEs.
-
-Run tests:
-
-```powershell
-python -m pytest -q
-```
-
-Current verification result:
-
-```text
-69 passed
-```
-
-Run Android unit tests with:
-
-```powershell
-cd PhoneCamSender
-.\gradlew.bat testDebugUnitTest
-```
-
-The local fake model service test verifies that:
-
-- the request path is `/v1/chat/completions`;
-- `Authorization: Bearer ...` is sent;
-- the request body contains the correct `model`;
-- the image is sent as `data:image/jpeg;base64,...`;
-- the model JSON output can be parsed and normalized by the system.
-
----
 <a id="sec5"></a>
 
 ## 5. Version Information & Notes [⌃](#top)
@@ -1657,13 +1640,13 @@ The local fake model service test verifies that:
 The Sentinel system consists of **PC-side service program + Web Dashboard + Android CamFlow client**.  
 The current version information is as follows:
 
-- **Sentinel (PC + Dashboard) Version**: v1.1.4
+- **Sentinel (PC + Dashboard) Version**: v1.1.5
 - **CamFlow (Android source) Version**: v1.1.2
 - **Bundled CamFlow APK Version**: v1.1.2 (debug-signed)
-- **Documentation Version**: v1.1.4
-- **Last Updated**: 2026-09-27
+- **Documentation Version**: v1.1.5
+- **Last Updated**: 2026-10-29
 
-All runtime versions are defined once in the root `version.properties`. The PC loads it through `app/version.py` for the Dashboard footer, startup output, and `/api/version`; the Android Gradle build and settings page read the same file instead of keeping separate hardcoded versions. The file also records the current APK path and SHA-256, and automated tests verify that the package matches both READMEs.
+All runtime versions are defined once in the root `version.properties`. The PC loads it through `app/version.py` for the Dashboard footer, startup output, and `/api/version`; the Android Gradle build and settings page read the same file instead of keeping separate hardcoded versions. CamFlow remains at v1.1.2; this PC update does not require reinstalling the phone app.
 
 ---
 
@@ -1671,11 +1654,7 @@ All runtime versions are defined once in the root `version.properties`. The PC l
 
 ### 5.2. Test Environment [⌃](#top)
 
-All 69 Python tests and 19 Android unit tests passed. CI also passed Python 3.9 / 3.12 on Windows / Linux and Android unit tests plus APK builds. Coverage includes permissions, CSRF, pairing/session expiry, device revocation, recording retention/low disk, video read/write, and AI state transitions/key rotation.
-
-CamFlow build 9 completed a basic real-device retest. Keystore instrumentation tests were compiled but have not run on a device; background behavior and sustained operation have not completed separate acceptance. For the clarification of the earlier upload report, see [network quality and troubleshooting](#network-quality).
-
-The following device environments are historical records, not a complete test matrix for every release:
+The following describes deployment requirements and historical device environments; results depend on the device and network:
 
 - PC Side (Server + Dashboard)
   - **Operating System**: Windows 10 / Windows 11

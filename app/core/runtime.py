@@ -15,6 +15,7 @@ class RecorderRuntime:
     rec: object = None  # SegmentRecorder instance
     recording_start_ts: Optional[float] = None
     last_error: str = ""
+    waiting_for_frames: bool = False
     storage: dict = field(default_factory=dict)
 
     def is_opened(self) -> bool:

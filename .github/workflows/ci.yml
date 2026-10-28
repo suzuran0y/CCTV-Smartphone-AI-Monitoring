@@ -35,6 +35,7 @@ jobs:
         run: |
           node --check app/web/static/dashboard.js
           node --check app/web/static/access.js
+          node --check app/web/static/media.js
 
   android:
     name: Android unit tests

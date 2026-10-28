@@ -3,6 +3,7 @@ import os
 import sqlite3
 import threading
 from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
@@ -92,6 +93,7 @@ def test_active_recording_keeps_disk_checks_on_original_output(system, tmp_path,
     original = tmp_path / "original"
     cfg.set_key("out_root", str(tmp_path / "changed"))
     cfg.set_key("recording", True)
+    cfg.set_key("ingest_enabled", True)
     frame.set(np.zeros((16, 16, 3), dtype=np.uint8))
     stop = threading.Event()
     runtime.rec = SimpleNamespace(out_root=str(original / "videos"), current_path=None,
@@ -103,3 +105,18 @@ def test_active_recording_keeps_disk_checks_on_original_output(system, tmp_path,
     monkeypatch.setattr("app.recorder.recorder_worker.maintain_storage", inspect)
     record_loop(cfg, frame, runtime, logging.getLogger("storage-test"), stop)
     assert checked == [str(original)]
+
+
+def test_busy_download_defers_retention_without_stopping_recording(tmp_path, monkeypatch):
+    cfg, root, files = setup_storage(tmp_path)
+    cfg['record_cleanup_enabled'] = True
+    original_unlink = Path.unlink
+
+    def busy(path, *args, **kwargs):
+        if path in files:
+            raise PermissionError('download still open')
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'unlink', busy)
+    result = maintain_storage(cfg)
+    assert result['can_record'] and result['removed'] == 0

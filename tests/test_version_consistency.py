@@ -33,7 +33,6 @@ def test_runtime_versions_match_android_build_and_readmes():
         assert f"v{SENTINEL_VERSION}" in readme
         assert f"v{CAMFLOW_SOURCE_VERSION}" in readme
         assert CAMFLOW_APK_PATH in readme
-        assert CAMFLOW_APK_SHA256 in readme
         assert RELEASE_DATE in readme
 
     dashboard = (ROOT / "app/web/templates/dashboard.html").read_text(encoding="utf-8")

@@ -37,6 +37,7 @@ class SegmentRecorder:
         self.writer = None
         self.segment_start_ts = None
         self.current_path = None
+        self.frame_size = None
         os.makedirs(self.out_root, exist_ok=True)
 
     def _codec_candidates(self):
@@ -75,6 +76,7 @@ class SegmentRecorder:
                     self.writer = writer
                     self.current_path = path
                     self.segment_start_ts = time.time()
+                    self.frame_size = (frame_w, frame_h)
                     previous_codec = self.active_codec or self.requested_codec
                     self.active_codec = codec
                     if codec != previous_codec:
@@ -105,6 +107,7 @@ class SegmentRecorder:
         self.writer = None
         self.segment_start_ts = None
         self.current_path = None
+        self.frame_size = None
         if completed and os.path.isfile(completed):
             register_recording(self.out_root, completed)
 
@@ -112,6 +115,10 @@ class SegmentRecorder:
         """Write one frame; auto-open and auto-rotate by time."""
         h, w = frame_bgr.shape[:2]
         now = time.time()
+
+        # A returning camera may negotiate a different capture size.
+        if self.writer is not None and self.frame_size != (w, h):
+            self._close_writer()
 
         if self.writer is None:
             path = self._open_writer(w, h)

@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.4-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.5-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,7 +12,7 @@
 
 本项目已被 [科技爱好者周刊](#CR) 和 [科技补全](#CR) 收录。感谢他们的认可与支持。
 
-🚀 最新更新（持续迭代中）：[v1.1.4 — 2026-09-27](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 最新更新（持续迭代中）：[v1.1.5 — 2026-10-29](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框架。
 
@@ -633,8 +633,6 @@ PhoneCamSender/
 PhoneCamSender/CamFlow-v1.1.2.apk
 ```
 
-> 当前仓库安装包为 CamFlow v1.1.2 build 9（debug-signed，分辨率显示语义修订），SHA-256：`EBBD242B5C1660607D45808480895D8F88F71F106B6A64CE7CE2E3FC726F58E5`。旧版安装包暂留，待 v1.1.2 真机验收后清理。
-
 #### 3.4.1. 使用 APK 快速安装（推荐）
 
 对于普通使用者，直接使用安装包比较方便：
@@ -829,6 +827,9 @@ Live View 下方有三个按钮，其在初始状态下默认未开启：`Enable
 | **Upload FPS** | 数字（帧/秒） | 服务器估计的上传帧率 | 接近 0 → CamFlow 未上传或 Ingest 关闭 |
 | **Stream FPS** | 数字（帧/秒） | 浏览器端 MJPEG 刷新频率 | 浏览器卡顿可适当降低，过高会增加 CPU 占用 |
 | **JPEG Quality** | 数字（0–100） | 预览画面压缩质量 | 质量越高越清晰但占用越高，高质量+高 FPS 可能导致性能压力 |
+| **Frame stale after (sec)** | 秒 | 无新帧达到阈值后显示过期提示 | 默认 5，范围 1–120。 |
+| **Pause recording after no frames (sec)** | 秒 | 断流达到阈值后关闭当前录像段 | 默认 5，范围 1–300。 |
+| **Resume recording after camera returns** | Automatic / Manual | 新画面到达后自动新建录像段，或保持停止等待手动启动 | 默认 Automatic。 |
 | **Record FPS** | 数字（帧/秒） | 视频录制帧率 | 过高会增加写盘压力，过低会导致视频不流畅 |
 | **Segment Seconds** | 数字（秒） | 视频分段时长 | 文件过大可降低该值，过小会生成大量文件 |
 | **Recording file** | 字符串（文件路径） | 正在写入的视频路径 | 若 `Recording = ON` 但为该字段为空 → 录制线程未正常运行 |
@@ -972,6 +973,34 @@ Live View 下方有三个按钮，其在初始状态下默认未开启：`Enable
 Android Keystore 加密保存各设备凭据，绑定服务器地址并排除在备份之外；服务端只保存设备令牌摘要。点击某台设备的 **Revoke** 可使其凭据失效；更换服务器、清除本地凭据或被撤销后均需重新配对。
 
 多台已配对手机共用一个画面缓冲区，不会产生独立摄像头画面。上传被拒绝或停滞时，见[上传诊断](CamFlow_UserGuide_CN.md#upload-diagnostics)。
+
+---
+
+<a id="frame-freshness"></a>
+
+#### 4.3.10. 画面新鲜度与录像断流恢复
+
+Live View 下方显示实时、等待画面、Ingest 关闭或画面已过期。默认连续 5 秒没有新帧即标记过期，视频流本身也会在旧画面上显示 STALE 提示；收到新帧后自动恢复实时状态。状态查询失败时显示服务器不可达，避免把旧图当作实时画面。截图只接受当前有效画面。
+
+Settings 中分别配置 **Frame stale after (sec)** 和 **Pause recording after no frames (sec)**，点击 Apply 生效。录像默认在连续 5 秒无新帧时关闭当前片段并等待；**Resume recording after camera returns** 为 Automatic 时，新画面到达后创建新片段继续录制，为 Manual 时则停止录像，需点击 Start Recording。Ingest 关闭或尚无画面时不会写入旧图；磁盘保护或手动停止后不会自动重启。
+
+阈值以内仍按设定 Record FPS 写入最近帧，录像不会补写整个断流期间的静止画面；自动恢复后的片段与断流前的片段分别保存。
+
+<a id="shared-stream"></a>
+
+#### 4.3.11. 多人观看与编码复用
+
+多个浏览器观看同一路画面时，服务端复用相同帧和 JPEG Quality 对应的编码结果；新帧、画面状态或质量设置变化时更新。Stream FPS 仍控制各连接的发送频率，每个观看连接仍占用相应带宽。上传与编码使用独立锁，观看端编码不会占用上传缓冲区的锁。
+
+<a id="media-library"></a>
+
+#### 4.3.12. 录像与截图浏览下载
+
+管理员登录后，在左侧展开 **Recordings & Snapshots**，选择 Recordings 或 Snapshots，点击 Refresh 查看当前 Output Root 的文件，每页最多 25 项，可用 Previous／Next 翻页。列表展示文件名、修改时间、大小及 Download 链接，按修改时间倒序排列；不提供删除操作。
+
+仅展示当前输出目录下按系统命名规则保存的录像和截图，也可显示符合规则的历史文件。正在写入的录像段不展示且不能下载，片段关闭后刷新即可；下载受管理员权限保护，配对手机和访客均不可访问。不会跟随符号链接或 Windows 目录联接。
+
+切换 Output Root 后只浏览新目录，旧目录保留在本地。自动清理可能移除列表中的文件，此时刷新列表即可；可浏览历史文件不代表它们已纳入自动清理登记。
 
 ---
 
@@ -1592,52 +1621,6 @@ Only output one JSON object. Do not output markdown or extra explanations.
 
 ---
 
-#### 4.6.12. 验证与测试
-
-本模块已添加自动化测试，主要覆盖：
-
-- Provider 配置解析；
-- Ark 旧字段兼容；
-- Base URL 到 `/chat/completions` 的拼接逻辑；
-- OpenAI-compatible 响应解析；
-- API Key 脱敏模型信息输出；
-- Dashboard 是否包含 Provider 配置字段与 Model Info 容器；
-- `/api/config` 是否可更新通用 Provider 字段并在 `/api/ai/status` 中生效；
-- 使用本地假 OpenAI-compatible 服务完整验证请求链路。
-- 图片上传的启停、解码失败和 8 MB 大小限制；
-- 录像编码器打开失败、自动后备和已成功编码器复用；
-- 配置更新日志不会写入真实 API Key；
-- Android 服务器地址规范化与非法地址拒绝。
-- Dashboard、版本 API、Gradle 与中英文 README 的版本一致性。
-
-运行测试：
-
-```powershell
-python -m pytest -q
-```
-
-当前验证结果：
-
-```text
-69 passed
-```
-
-Android 单元测试可通过以下命令运行：
-
-```powershell
-cd PhoneCamSender
-.\gradlew.bat testDebugUnitTest
-```
-
-其中，本地假模型服务测试会验证：
-
-- 请求地址是否为 `/v1/chat/completions`；
-- 是否携带 `Authorization: Bearer ...`；
-- 请求体中的 `model` 是否正确；
-- 图像是否以 `data:image/jpeg;base64,...` 形式传递；
-- 模型 JSON 输出是否能被系统解析并归一化。
-
----
 <a id="sec5"></a>
 
 ## 5. 版本信息与项目说明 [⌃](#top)
@@ -1648,13 +1631,13 @@ cd PhoneCamSender
 
 Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 组成，当前版本信息如下：
 
-- **Sentinel（PC + Dashboard）版本**：v1.1.4
+- **Sentinel（PC + Dashboard）版本**：v1.1.5
 - **CamFlow（Android 源码）版本**：v1.1.2
 - **仓库内 CamFlow APK 版本**：v1.1.2（debug-signed）
-- **本文档版本**：v1.1.4
-- **最后更新日期**：2026-09-27
+- **本文档版本**：v1.1.5
+- **最后更新日期**：2026-10-29
 
-所有运行时版本统一定义于根目录 `version.properties`。PC 端通过 `app/version.py` 读取，供 Dashboard 页脚、启动信息和 `/api/version` 共用；Android Gradle 构建和设置页读取同一文件，不再单独硬编码版本号。该文件也记录当前 APK 路径与 SHA-256，自动测试会校验安装包和中英文 README 是否一致。
+所有运行时版本统一定义于根目录 `version.properties`。PC 端通过 `app/version.py` 读取，供 Dashboard 页脚、启动信息和 `/api/version` 共用；Android Gradle 构建和设置页读取同一文件，不再单独硬编码版本号。CamFlow 继续使用 v1.1.2，无需因 PC 端本次更新重新安装。
 
 ---
 
@@ -1662,11 +1645,7 @@ Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 
 
 ### 5.2. 测试环境说明 [⌃](#top)
 
-69 项 Python 测试与 19 项 Android 单元测试通过；CI 亦通过 Windows／Linux 上的 Python 3.9／3.12 检查，以及 Android 单元测试和 APK 构建。覆盖权限、CSRF、配对与会话过期、设备撤销、录像保留／低磁盘、视频读写及 AI 状态转换／密钥轮换。
-
-CamFlow build 9 已完成基本真机复测。Keystore 设备测试已编译但尚未在设备执行，后台行为和长时间运行尚未完成专项验收。此前上传现象的澄清见[网络质量与排查说明](#network-quality)。
-
-以下设备环境为历史测试记录，不代表每个版本的完整测试矩阵：
+以下为项目部署要求与历史设备环境，具体运行效果取决于设备及网络：
 
 - PC 端（Server + Dashboard）
   - **操作系统**：Windows 10 / Windows 11

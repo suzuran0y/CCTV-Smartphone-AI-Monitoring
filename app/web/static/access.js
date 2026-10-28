@@ -8,12 +8,15 @@ function updateAccessUI() {
   document.getElementById("loginForm").hidden = admin;
   document.getElementById("logoutBtn").hidden = !admin;
   document.getElementById("devicePanel").hidden = !admin;
+  document.getElementById("mediaPanel").hidden = !admin;
+  if (!admin) document.getElementById("mediaRows").replaceChildren();
   document.querySelectorAll("#rightPane input, #rightPane select, #rightPane textarea, #rightPane button, #ingestToggleBtn, #recordToggleBtn, #snapshotBtn, #shutdownBtn")
     .forEach(el => { el.disabled = !admin; });
   document.querySelector(".logs-box").hidden = !admin;
   const canView = admin || !accessState.viewer_auth_required;
   const live = document.getElementById("live");
   live.hidden = !canView;
+  document.getElementById("frameState").hidden = !canView;
   document.getElementById("liveLocked").hidden = canView;
   if (canView && !live.getAttribute("src")) live.src = "/stream";
   if (!canView) {

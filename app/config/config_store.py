@@ -24,6 +24,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # preview / stream
     "stream_fps": 10,
     "jpeg_quality": 80,
+    "frame_stale_seconds": 5,
 
     # recording
     "recording": False,
@@ -32,6 +33,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "out_root": "recordings",
     "cam_name": "phone1",
     "codec": "mp4v",
+    "record_gap_seconds": 5,
+    "record_auto_resume": True,
 
     # =========================
     # AI monitoring (triggered branch v1)
@@ -140,6 +143,9 @@ def validate_and_normalize(patch: dict) -> Tuple[bool, dict, str]:
 
         _int("stream_fps", 1, 30)
         _int("jpeg_quality", 30, 95)
+        _float("frame_stale_seconds", 1, 120)
+        _float("record_gap_seconds", 1, 300)
+        _bool("record_auto_resume")
 
         _int("record_fps", 1, 30)
         _int("segment_seconds", 10, 3600)

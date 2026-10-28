@@ -656,3 +656,13 @@ html, body {
 body{
   padding-bottom: 48px;
 }
+
+.frame-state { padding: 8px 10px; margin: 8px 0 0; border-radius: 6px; background: #fff6df; }
+.frame-state[data-state="live"] { background: #eaffea; }
+.frame-state[data-state="stale"], .frame-state[data-state="unavailable"] { background: #ffecec; }
+.media-panel[hidden] { display: none !important; }
+.media-panel summary { cursor: pointer; }
+.media-controls { gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.media-scroll { overflow-x: auto; }
+.media-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.media-table th, .media-table td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; overflow-wrap: anywhere; }

@@ -167,7 +167,7 @@ CamFlow provides the following core functionalities:
 
 ### 1.3. Installation [⌃](#top)
 
-Use CamFlow v1.1.2 with Sentinel v1.1.4. Older v1.1.0 / v1.1.1 clients cannot upload to the authenticated server. Review [network quality and troubleshooting](#network-quality) before deployment.
+Use CamFlow v1.1.2 with Sentinel v1.1.5 (also compatible with Sentinel v1.1.4). Older v1.1.0 / v1.1.1 clients cannot upload to the authenticated server. Review [network quality and troubleshooting](#network-quality) before deployment.
 
 #### 1.3.1. Standard User Installation (APK Package)
 

@@ -56,6 +56,7 @@
 
         <div style="margin-top:10px;">
           <img id="live" alt="Live stream — sign in if privacy mode is enabled"/>
+          <p id="frameState" class="frame-state" role="status" aria-live="polite">Checking camera status…</p>
           <p id="liveLocked" class="hint" hidden>Privacy mode — sign in to view this camera.</p>
         </div>
 
@@ -71,6 +72,24 @@
       </div>
 
       <!-- Monitor status -->
+      <details id="mediaPanel" class="card media-panel" hidden style="margin-top:12px;">
+        <summary><b>Recordings &amp; Snapshots</b></summary>
+        <p class="hint">Files under the current Output Root. Active recordings are hidden until the segment closes.</p>
+        <div class="row media-controls">
+          <label for="mediaKind">Type</label>
+          <select id="mediaKind"><option value="videos">Recordings</option><option value="snapshots">Snapshots</option></select>
+          <button id="mediaRefresh" type="button">Refresh</button>
+        </div>
+        <p id="mediaMessage" class="hint" role="status"></p>
+        <div class="media-scroll"><table class="media-table">
+          <thead><tr><th>File</th><th>Modified</th><th>Size</th><th>Download</th></tr></thead>
+          <tbody id="mediaRows"></tbody>
+        </table></div>
+        <div class="row media-controls">
+          <button id="mediaPrevious" type="button">Previous</button><span id="mediaPage">Page 1</span>
+          <button id="mediaNext" type="button">Next</button>
+        </div>
+      </details>
       <div class="card" style="margin-top:12px;">
         <div class="row" style="justify-content:space-between; align-items:center;">
           <b>Monitor Status</b>
@@ -112,6 +131,9 @@
           <div class="field"><label for="record_retention_days">Retention (days)</label><input id="record_retention_days" type="number" min="1" max="3650"></div>
           <div class="field"><label for="record_max_storage_gb">Recording quota (GiB)</label><input id="record_max_storage_gb" type="number" min="0.1" step="0.1"></div>
           <div class="field"><label for="record_min_free_gb">Minimum free disk (GiB)</label><input id="record_min_free_gb" type="number" min="0.1" step="0.1"></div>
+          <div class="field"><label for="frame_stale_seconds">Frame stale after (sec)</label><input id="frame_stale_seconds" type="number" min="1" max="120" step="1"></div>
+          <div class="field"><label for="record_gap_seconds">Pause recording after no frames (sec)</label><input id="record_gap_seconds" type="number" min="1" max="300" step="1"></div>
+          <div class="field"><label for="record_auto_resume">Resume recording after camera returns</label><select id="record_auto_resume"><option value="true">Automatic — new segment</option><option value="false">Manual — press Start Recording</option></select></div>
 
           <div class="field">
             <label>Stream FPS</label>
@@ -356,6 +378,7 @@
 
   <script src="{{ url_for('static', filename='access.js') }}"></script>
   <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='media.js') }}"></script>
 
   <footer class="app-footer">
     <div class="footer-inner">

@@ -7,10 +7,12 @@ from datetime import datetime
 
 import cv2
 import numpy as np
-from flask import Flask, request, Response, jsonify, render_template, g
+from flask import Flask, request, Response, jsonify, render_template, g, send_file
 from app.core.auth import AuthStore, install_auth
 from app.web.upload_diagnostics import install_upload_diagnostics
 from app.recorder.storage import maintain_storage
+from app.web.stream_renderer import SharedJpegRenderer, frame_state
+from app.web.media_library import list_media, open_media
 
 from app.config.config_store import validate_and_normalize
 from app.ai.vision_client import safe_provider_info
@@ -47,6 +49,8 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
     auth_store = auth_store or AuthStore(os.path.join(os.path.dirname(cfg_store.path), "auth.sqlite3"))
     install_upload_diagnostics(app, logger)
     install_auth(app, auth_store, cfg_store)
+    renderer = SharedJpegRenderer(frame_buf)
+    app.extensions["stream_renderer"] = renderer
 
     # Disable Werkzeug access logs (keep your original behavior)
     import logging as _logging
@@ -97,35 +101,31 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             logger.warning(f"400 decode failed bytes={len(data)}")
             return "decode failed", 400
 
+        # Ingest may have been disabled while the request body was being received.
+        if not cfg_store.get_copy().get("ingest_enabled"):
+            stats.mark_rejected()
+            return "ingest disabled", 503
         frame_buf.set(img)
         stats.mark_ok()
         return "OK"
 
     def mjpeg_generator():
         session_token = request.cookies.get("sentinel_session", "")
-        while True:
+        while not stop_event.is_set():
             cfg = cfg_store.get_copy()
             # Recheck existing streams: privacy changes, logout and reset must take effect.
             if cfg.get("viewer_auth_required") and not auth_store.session(session_token):
                 return
             stream_fps = int(cfg.get("stream_fps", 10))
-            jpeg_quality = int(cfg.get("jpeg_quality", 80))
-            ingest_enabled = bool(cfg.get("ingest_enabled", False))
-
             interval = 1.0 / max(1, stream_fps)
-            time.sleep(interval)
-
-            frame = frame_buf.get_copy()
-            if frame is None:
-                h, w = 360, 640
-                frame = np.zeros((h, w, 3), dtype=np.uint8)
-                msg = "Ingest OFF - enable in dashboard" if not ingest_enabled else "Waiting for frames..."
-                cv2.putText(frame, msg, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-
-            ok, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])
-            if not ok:
+            if stop_event.wait(interval):
+                return
+            cfg = cfg_store.get_copy()
+            if cfg.get("viewer_auth_required") and not auth_store.session(session_token):
+                return
+            jpg = renderer.render(cfg)
+            if jpg is None:
                 continue
-            jpg = buf.tobytes()
             yield (
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n"
@@ -276,11 +276,13 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         return jsonify({"ok": True, "recording": False})
 
     def _snapshot_path(base_root: str = "recordings"):
+        from app.recorder.storage import safe_root
         now = datetime.now()
-        snap_root = os.path.join(base_root, "snapshots")
+        snap_root = str(safe_root(os.path.join(base_root, "snapshots")))
         day_dir = os.path.join(snap_root, now.strftime("%Y%m%d"))
+        safe_root(day_dir)
         os.makedirs(day_dir, exist_ok=True)
-        fname = f"snapshot_{now.strftime('%Y%m%d_%H%M%S')}.jpg"
+        fname = f"snapshot_{now.strftime('%Y%m%d_%H%M%S_%f')}.jpg"
         return os.path.join(day_dir, fname)
 
     @app.post("/api/system/shutdown")
@@ -331,13 +333,16 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
 
     @app.post("/api/snapshot")
     def api_snapshot():
-        frame = frame_buf.get_copy()
-        if frame is None:
-            return jsonify({"ok": False, "error": "no frame"}), 409
-
         cfg = cfg_store.get_copy()
+        frame, age, _ = frame_buf.snapshot()
+        state = frame_state(cfg["ingest_enabled"], age, cfg.get("frame_stale_seconds", 5))
+        if state != "live":
+            return jsonify({"ok": False, "error": "no fresh frame", "frame_state": state}), 409
         base_root = str(cfg.get("out_root", "recordings"))
-        path = _snapshot_path(base_root)
+        try:
+            path = _snapshot_path(base_root)
+        except (OSError, ValueError):
+            return jsonify(ok=False, error="snapshot directory unavailable"), 409
 
         ok = cv2.imwrite(path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 92])
         if not ok:
@@ -346,11 +351,57 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
         logger.info(f"snapshot saved: {path}")
         return jsonify({"ok": True, "path": path})
 
+    @app.get("/api/media")
+    def api_media():
+        try:
+            page = int(request.args.get("page", "1"))
+            page_size = int(request.args.get("page_size", "25"))
+            if not 1 <= page <= 400 or not 1 <= page_size <= 25:
+                raise ValueError("invalid pagination")
+            cfg = cfg_store.get_copy()
+            with rec_rt.lock:
+                active = rec_rt.rec.current_path if rec_rt.rec else None
+            result = list_media(cfg["out_root"], request.args.get("kind", "videos"), active, page, page_size)
+            return jsonify(ok=True, **result)
+        except ValueError as exc:
+            return jsonify(ok=False, error=str(exc)), 400
+        except OSError:
+            return jsonify(ok=False, error="media directory unavailable"), 409
+
+    @app.get("/api/media/download")
+    def api_media_download():
+        kind = request.args.get("kind", "videos")
+        try:
+            with rec_rt.lock:
+                active = rec_rt.rec.current_path if rec_rt.rec else None
+                stream, info, name = open_media(cfg_store.get_copy()["out_root"], kind,
+                                                request.args.get("path", ""), active)
+        except FileNotFoundError:
+            return jsonify(ok=False, error="media no longer exists; refresh the list"), 404
+        except PermissionError:
+            return jsonify(ok=False, error="media is in use or unavailable"), 409
+        except ValueError:
+            return jsonify(ok=False, error="invalid media path"), 400
+        except OSError:
+            return jsonify(ok=False, error="media unavailable"), 409
+        try:
+            response = send_file(stream, download_name=name, as_attachment=True, conditional=False,
+                                 etag=False, last_modified=info.st_mtime)
+            response.content_length = info.st_size
+            response.make_conditional(request.environ, accept_ranges=True, complete_length=info.st_size)
+            response.call_on_close(stream.close)
+            return response
+        except BaseException:
+            stream.close()
+            raise
+
     @app.get("/api/status")
     def api_status():
         cfg = cfg_store.get_copy()
 
-        age = frame_buf.age_sec()
+        _, age, _ = frame_buf.snapshot(copy=False)
+        state = frame_state(cfg["ingest_enabled"], age, cfg.get("frame_stale_seconds", 5))
+        age = None if age is None else round(age, 3)
         counts = stats.snapshot_counts()
         upload_fps = round(stats.upload_fps(), 2)
         if not g.is_admin:
@@ -358,6 +409,7 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
                            ingest_enabled=bool(cfg.get("ingest_enabled")),
                            recording=bool(cfg.get("recording")),
                            last_frame_age_sec=age, upload_fps=upload_fps,
+                           frame_state=state, frame_stale_seconds=cfg.get("frame_stale_seconds", 5),
                            stream_fps=cfg["stream_fps"], jpeg_quality=cfg["jpeg_quality"])
 
         # recorder info
@@ -392,6 +444,11 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
             "cam_name": cfg.get("cam_name"),
             "codec": cfg.get("codec"),
             "last_frame_age_sec": age,
+            "frame_state": state,
+            "frame_stale_seconds": cfg.get("frame_stale_seconds", 5),
+            "recording_waiting_for_frames": rec_rt.waiting_for_frames,
+            "record_gap_seconds": cfg.get("record_gap_seconds", 5),
+            "record_auto_resume": cfg.get("record_auto_resume", True),
             "upload_fps": upload_fps,
 
             "recorder_opened": opened,

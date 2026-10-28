@@ -68,7 +68,16 @@ def maintain_storage(cfg, active_path=None, logger=None):
                 # Validate the exact target again immediately before deletion.
                 safe_root(path)
                 path.relative_to(root)
-                path.unlink()
+                try:
+                    path.unlink()
+                except PermissionError:
+                    # Windows may keep a completed segment open during a download.
+                    # Retry it on a later pass without disabling otherwise healthy recording.
+                    if logger:
+                        logger.info("retention deferred busy recording: %s", path)
+                    continue
+                except FileNotFoundError:
+                    pass
                 with db:
                     db.execute("DELETE FROM recordings WHERE path=?", (relative,))
                 total -= size
