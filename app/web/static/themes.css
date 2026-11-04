@@ -1,0 +1,89 @@
+/* Desktop content themes; Windows owns the native window frame. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --dark-page: #111827;
+  --dark-panel: #1b2636;
+  --dark-control: #243449;
+  --dark-edge: #43546c;
+  --dark-text: #e8eef7;
+  --dark-muted: #aebdd0;
+}
+[data-theme="dark"] body { background: var(--dark-page); color: var(--dark-text); }
+[data-theme="dark"] :is(.launcher-bar, footer, .app-footer, .card, .status-card, .ai-status-card,
+  .provider-hint, .ai-hitem, .ai-htag, .pill, .media-table th, pre) {
+  background: var(--dark-panel);
+  color: var(--dark-text);
+  border-color: var(--dark-edge);
+}
+[data-theme="dark"] :is(.brand-title, .brand-subtitle) { color: var(--dark-text) !important; }
+[data-theme="dark"] :is(.brand span, .hint, .access-panel-hint, label, .status-k, .status-v,
+  .model-info-row span, .model-info-row strong, .ai-summary, .ai-raw summary, .ai-htime, .ai-hmeta, .ai-hsummary) {
+  color: var(--dark-muted);
+}
+[data-theme="dark"] :is(button, input, select, textarea, .media-table td, .ai-status-section) {
+  color: inherit;
+  border-color: var(--dark-edge);
+}
+[data-theme="dark"] :is(button, input, select, textarea) { background: var(--dark-control); }
+[data-theme="dark"] :is(button.primary, button.success) { background: #213c61; border-color: #567dab; }
+[data-theme="dark"] button.danger { background: #542b36; border-color: #98606c; }
+[data-theme="dark"] button:hover:not(:disabled) { background: #34506e; }
+[data-theme="dark"] button.danger:hover:not(:disabled) { background: #703848; }
+[data-theme="dark"] iframe { background: var(--dark-page); }
+[data-theme="dark"] :is(a, #error) { color: #9cc9ff; }
+[data-theme="dark"] :focus-visible { outline: 2px solid #9cc9ff; outline-offset: 2px; }
+[data-theme="dark"] :is(.frame-state, .badge.warn, .pill.warn, .model-info-status.warn, .ai-htag.risk-warn) { background: #493818; }
+[data-theme="dark"] :is(.frame-state[data-state="live"], .badge.ok, .pill.ok, .model-info-status.ok, .ai-htag.risk-info) { background: #1b4136; }
+[data-theme="dark"] :is(.frame-state[data-state="stale"], .frame-state[data-state="unavailable"],
+  .badge.err, .pill.err, .ai-htag.err, .ai-htag.risk-critical) {
+  background: #542b36;
+}
+
+:root[data-theme="luna"] {
+  color-scheme: light;
+  --luna-paper: #ece9d8;
+  --luna-edge: #aca899;
+  --luna-blue: #174998;
+  --luna-focus: #215dc6;
+}
+[data-theme="luna"] body {
+  color: #111; background: var(--luna-paper);
+  font-family: Tahoma, "Microsoft YaHei UI", "Segoe UI", sans-serif;
+}
+[data-theme="luna"] .launcher-bar {
+  color: white; border-bottom: 1px solid #063695;
+  background: linear-gradient(#2a6cdf, #619cf6 16%, #215ed8 46%, #174cbf 92%, #093396);
+}
+[data-theme="luna"] .launcher-bar .brand span { color: #edf4ff; }
+[data-theme="luna"] .launcher-bar label { color: inherit; }
+[data-theme="luna"] :is(.card, .access-panel, .status-card, .ai-status-card, .media-panel) {
+  border: 1px solid var(--luna-edge); border-radius: 3px;
+  background: #f8f6ec; box-shadow: inset 0 1px white;
+}
+[data-theme="luna"] :is(.card > b, summary, .status-k, .ai-status-title) { color: var(--luna-blue); }
+[data-theme="luna"] :is(button, select, input, textarea) { font-family: inherit; color: #151515; }
+[data-theme="luna"] :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  background-color: #fff; border: 1px solid #7f9db9; border-radius: 1px;
+}
+[data-theme="luna"] :is(input[type="checkbox"], input[type="radio"], progress) { accent-color: #2874cc; }
+[data-theme="luna"] button {
+  border: 1px solid #31578a; border-radius: 3px;
+  background: linear-gradient(white, #faf9f3 49%, #e6e3d7);
+  box-shadow: inset 0 0 0 1px #fdfcf5;
+}
+[data-theme="luna"] button.primary { box-shadow: inset 0 0 0 2px #a7caef; border-color: #1452a4; }
+[data-theme="luna"] button.danger { border-color: #9e5545; }
+[data-theme="luna"] button:hover:not(:disabled) { background: linear-gradient(#fff, #ffe3a3); border-color: #b37720; }
+[data-theme="luna"] button:active:not(:disabled) { background: linear-gradient(#d5d0bf, #f4f1e5); box-shadow: inset 1px 1px #9c988a; }
+[data-theme="luna"] :is(button, select, input, textarea):disabled {
+  color: #5c5b53; background: #dedbd0; border-color: #b0ad9f; box-shadow: none; opacity: 1;
+}
+[data-theme="luna"] :focus-visible { outline: 2px dotted var(--luna-focus); outline-offset: 2px; }
+[data-theme="luna"] .splitter { background: #d9dfeb; }
+[data-theme="luna"] :is(footer, .app-footer) { background: var(--luna-paper); border-top: 1px solid #aaa694; }
+[data-theme="luna"] .desktop-shell footer span + span:not(:empty) { padding-left: 10px; border-left: 1px solid #b6b2a3; }
+[data-theme="luna"] .media-table th { background: #e8e6db; color: var(--luna-blue); }
+[data-theme="luna"] ::-webkit-scrollbar { width: 15px; height: 15px; }
+[data-theme="luna"] ::-webkit-scrollbar-track { background: #efeee6; }
+[data-theme="luna"] ::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #c3d9fb, #83a9e9); border: 2px solid #eef3fb; }
+[data-theme="luna"] ::-webkit-scrollbar-thumb:hover { background: #709ee4; }

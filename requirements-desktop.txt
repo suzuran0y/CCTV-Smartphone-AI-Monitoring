@@ -1,0 +1,6 @@
+# The desktop only needs the Ark runtime, not the entire cloud-service SDK.
+flask>=2.2,<4
+numpy>=1.26.4,<3
+opencv-python>=4.11,<5
+volcengine-ark-runtime>=5,<6
+pywebview>=6.2,<7

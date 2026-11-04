@@ -40,7 +40,7 @@
 
 - [5. 版本信息与项目说明](#sec5)
   - [5.1 系统版本信息](#sec51)
-  - [5.2 测试环境说明](#sec52)
+  - [5.2 连接要求](#sec52)
   - [5.3 后续规划](#sec53)
   - [5.4 使用与授权说明](#sec54)
 
@@ -117,7 +117,7 @@ CamFlow 主要功能包括：
    - 通过 HTTP 上传至 PC 端服务接口（`/upload`）。
 
 2. **服务器地址配置**
-   - PC 端 `server.py` 启动时输出 CamFlow 所需的 `IP:PORT`；
+   - PC 端 Dashboard 副标题旁和命令行启动信息均会显示 CamFlow 所需的 `IP:PORT`。
    - 首次使用时手动输入并保存，以后启动会先测试已保存的地址。
 
 3. **连接测试与状态可视化**
@@ -135,7 +135,7 @@ CamFlow 主要功能包括：
 
 ### 1.3. 安装方式 [⌃](#top)
 
-Sentinel v1.1.5 需搭配 CamFlow v1.1.2（亦兼容 Sentinel v1.1.4）。旧 v1.1.0／v1.1.1 客户端无法向认证服务器上传，部署前请阅读[网络质量与排查说明](#network-quality)。
+Sentinel v1.1.6 搭配 CamFlow v1.1.2 使用。该 APK 也适用于 Sentinel v1.1.4 和 v1.1.5。旧版 CamFlow v1.1.0 和 v1.1.1 无法与启用认证的服务端配对。
 
 #### 1.3.1. 普通用户安装（APK 安装包）
 > 适用于“使用者/部署者”。
@@ -192,12 +192,12 @@ Sentinel v1.1.5 需搭配 CamFlow v1.1.2（亦兼容 Sentinel v1.1.4）。旧 v1
 
 #### 2.2.1. 手动输入
 
-首次启动 CamFlow 时，App 会弹出提示框，要求手动输入 Sentinel 服务器地址。请先在 PC 端运行 `server.py`，再将启动输出中 `CamFlow:` 后的地址填入 App。
+首次启动 CamFlow 时，App 会提示输入 Sentinel 服务器地址。请先[启动 PC 端 Sentinel](README_CN.md#sec41)，然后填入 Dashboard 副标题旁标为 **CamFlow** 的地址。使用命令行启动时，终端也会显示该地址。
 
 提示框含义与输入规范：
 
 - **Enter Sentinel server address**
-  - 输入 `server.py` 显示的 CamFlow 地址。
+  - 输入 PC 端标为 **CamFlow** 的地址。
   - 输入服务器 IP（若非默认端口可附带输入）。
   - 格式举例：
     - `192.168.1.10`（默认端口将被自动补全，通常为 `8000`）
@@ -314,7 +314,7 @@ Frame size 来自当前相机裁剪区域，也是 JPEG 编码使用的尺寸，
 
 #### 2.4.2. 部署流程
 
-1. 在 PC 启动 Sentinel，保存首次显示的管理员令牌，并找到 `CamFlow: <PC_IP>:<PORT>`。
+1. 在 PC 启动 Sentinel，保存首次显示的管理员令牌，并在 Dashboard 找到 **CamFlow** 地址。
 2. 手机与 PC 连接同一可信局域网，在 App 填写该地址并测试连接。
 3. 管理员在 Dashboard 登录，点击 **Add CamFlow** 生成配对码。
 4. 在手机 Settings 填写设备名与配对码，点击 **Pair / Re-pair**，成功后点击 **Save**。
@@ -337,7 +337,7 @@ Frame size 来自当前相机裁剪区域，也是 JPEG 编码使用的尺寸，
 <details>
 <summary><strong>首次使用时应填写哪个地址？</strong></summary>
 
-1. 在 PC 端运行 `python server.py`。
+1. [启动 PC 端 Sentinel](README_CN.md#sec41)。
 2. 找到终端输出中的 `CamFlow: <PC_IP>:8000`。
 3. 将 `<PC_IP>:8000` 填入 App，然后点击 `Connect`；也可在设置页先点击 `Test connection`。
 4. 如果失败，在手机浏览器访问 `http://<PC_IP>:8000/ping`，并检查 PC 防火墙、同一 Wi-Fi 与 AP 隔离设置。
@@ -664,32 +664,18 @@ CamFlow:    192.168.1.10:8000    enter this address manually in the app
 - CamFlow（Android 源码）版本：v1.1.2
 - 仓库内安装包版本：v1.1.2（debug-signed）
 - 本文档版本：v1.1.2
-- 最后更新日期：2026-09-26
+- 最后更新日期：2026-11-05
 
 ---
 
 <a id="sec52"></a>
 
-### 5.2. 测试环境说明 [⌃](#top)
+### 5.2. 连接要求 [⌃](#top)
 
-本地验证通过 19 项 Android 单元测试及主 APK／设备测试 APK 构建，Android CI 亦已通过。build 9 已完成基本真机复测；Keystore 设备测试尚未在设备执行，长时间／后台运行未完成专项验收。此前上传现象已确认与测试环境的 Wi-Fi 质量有关，见[网络质量与排查说明](#network-quality)。
-
-以下环境为历史测试记录，不代表当前版本的完整测试矩阵：
-
-### Android 端
-
-- 软件环境：Android 10 及以上版本
-- 测试设备：nova 8 SE 活力版 - HarmonyOS 3.0.0 
-- 网络环境：同一局域网 Wi-Fi
-
-### PC 端
-
-- 软件环境：Windows 10 / Windows 11
-- Python 版本：Python 3.9+
-- 依赖库：Flask、OpenCV、Requests 等
-- 网络环境：局域网（LAN）
-
-> 不建议在公网环境直接暴露接口。已实现管理员认证与设备配对，但认证不等于 HTTP 传输加密；请使用可信局域网或配置 HTTPS。
+- CamFlow 请求相机权限时，请允许使用相机。
+- 手机和 PC 连接到同一可信局域网。
+- 使用 Dashboard 副标题旁显示的地址。如果修改过 PC 服务端口，请在地址中带上该端口。
+- 需要传输加密时请使用 HTTPS。
 
 ---
 

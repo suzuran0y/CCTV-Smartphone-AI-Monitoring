@@ -1,6 +1,6 @@
 
 [hidden] { display: none !important; }
-.visitor-mode #rightPane, .visitor-mode #splitter, .visitor-mode #floatingExpandBtn { display: none !important; }
+.visitor-mode #rightPane, .visitor-mode #splitter, .visitor-mode #expandSettingsBtn { display: none !important; }
 .visitor-mode #leftPane { flex: 1 1 auto !important; width: 100% !important; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 #adminToken { width: 260px; max-width: 65vw; }
@@ -39,13 +39,22 @@ pre { background: #f7f7f7; padding: 10px; border-radius: 10px; overflow: auto; m
 }
 
 .brand-subtitle{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
   font-size: 14px;
   color: #666;
   margin-top: 4px;
 }
 
+.camflow-address { font-weight: 600; white-space: nowrap; }
+.camflow-address code { color: inherit; user-select: all; }
+
 .topbar-actions{
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
   padding-top: 6px;
@@ -111,18 +120,6 @@ img {
 }
 .splitter.collapsed{
   display: none;
-}
-
-.floating-toggle{
-  position: fixed;
-  right: 12px;
-  top: 12px;
-  z-index: 9999;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #aaa;
-  background: #f5f5f5;
-  cursor: pointer;
 }
 
 .preTall{
@@ -660,6 +657,28 @@ body{
 .frame-state { padding: 8px 10px; margin: 8px 0 0; border-radius: 6px; background: #fff6df; }
 .frame-state[data-state="live"] { background: #eaffea; }
 .frame-state[data-state="stale"], .frame-state[data-state="unavailable"] { background: #ffecec; }
+
+[data-desktop] body { margin: 12px; }
+[data-desktop] .brand-title { font-size: 24px; }
+[data-desktop] #live {
+  display: block;
+  box-sizing: border-box;
+  max-height: clamp(96px, 42dvh, 360px);
+}
+
+@media (max-height: 420px) {
+  [data-desktop] .live-card { display: flex; flex-direction: column; }
+  [data-desktop] .live-preview { order: 1; }
+  [data-desktop] .live-card > .hint { order: 2; }
+}
+
+@media (max-width: 760px) {
+  [data-desktop] .layout { flex-direction: column; height: auto; gap: 12px; }
+  [data-desktop] #leftPane { width: auto; }
+  [data-desktop] #rightPane { flex: 0 1 auto !important; width: auto !important; max-width: none; }
+  [data-desktop] #rightPane.collapsed { display: none; }
+  [data-desktop] #splitter { display: none; }
+}
 .media-panel[hidden] { display: none !important; }
 .media-panel summary { cursor: pointer; }
 .media-controls { gap: 8px; flex-wrap: wrap; margin: 10px 0; }

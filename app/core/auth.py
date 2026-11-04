@@ -18,6 +18,7 @@ def digest(value):
 
 class AuthStore:
     SESSION_SECONDS = 8 * 3600
+    REMEMBER_SECONDS = 30 * 24 * 3600
 
     def __init__(self, path):
         self.path = str(path)
@@ -31,6 +32,9 @@ class AuthStore:
                 CREATE TABLE IF NOT EXISTS devices (id TEXT PRIMARY KEY, name TEXT, hash TEXT, created REAL);
                 CREATE TABLE IF NOT EXISTS pairing (hash TEXT PRIMARY KEY, expires REAL);
             """)
+            db.execute("BEGIN IMMEDIATE")
+            if not any(column[1] == "remembered" for column in db.execute("PRAGMA table_info(sessions)")):
+                db.execute("ALTER TABLE sessions ADD COLUMN remembered INTEGER NOT NULL DEFAULT 0")
         if os.name != "nt":
             os.chmod(self.path, 0o600)
 
@@ -80,14 +84,21 @@ class AuthStore:
                 return None
             session, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
             db.execute("DELETE FROM sessions WHERE expires < ?", (time.time(),))
-            db.execute("INSERT INTO sessions VALUES (?, ?, ?)",
+            db.execute("INSERT INTO sessions (hash, csrf, expires) VALUES (?, ?, ?)",
                        (digest(session), csrf, time.time() + self.SESSION_SECONDS))
             return session, csrf
 
     def session(self, token):
         with self.connect() as db:
-            return db.execute("SELECT csrf FROM sessions WHERE hash=? AND expires>?",
+            return db.execute("SELECT csrf, remembered FROM sessions WHERE hash=? AND expires>?",
                               (digest(token), time.time())).fetchone()
+
+    def remember(self, token, enabled):
+        now = time.time()
+        lifetime = self.REMEMBER_SECONDS if enabled else self.SESSION_SECONDS
+        with self.connect() as db:
+            return db.execute("UPDATE sessions SET remembered=?, expires=? WHERE hash=? AND expires>?",
+                              (enabled, now + lifetime, digest(token), now)).rowcount > 0
 
     def logout(self, token):
         with self.connect() as db:
@@ -168,12 +179,18 @@ def install_auth(app, store, cfg_store):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
+        origin = app.config.get("DESKTOP_ORIGIN")
+        if origin and request.endpoint == "dashboard" and request.host == app.config.get("DESKTOP_DASHBOARD_HOST"):
+            # Only this launcher's exact loopback origin can frame the dashboard.
+            response.headers.pop("X-Frame-Options", None)
+            response.headers["Content-Security-Policy"] = f"frame-ancestors {origin}"
         response.headers["Referrer-Policy"] = "same-origin"
         return response
 
     @app.get("/api/auth/status")
     def auth_status():
         return jsonify(ok=True, admin=g.is_admin, csrf=g.auth_session[0] if g.is_admin else None,
+                       remembered=g.is_admin and bool(g.auth_session[1]),
                        viewer_auth_required=bool(cfg_store.get_copy().get("viewer_auth_required")))
 
     @app.post("/api/auth/login")
@@ -187,6 +204,20 @@ def install_auth(app, store, cfg_store):
         store.logout(request.cookies.get(cookie, ""))
         response = jsonify(ok=True, csrf=result[1])
         response.set_cookie(cookie, result[0], httponly=True, samesite="Strict", secure=request.is_secure)
+        return response
+
+    @app.post("/api/auth/remember")
+    def auth_remember():
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not isinstance(data.get("remember"), bool):
+            return error("remember must be true or false", 400)
+        enabled = data["remember"]
+        session = request.cookies[cookie]
+        if not store.remember(session, enabled):
+            return error("administrator login required", 401)
+        response = jsonify(ok=True, remembered=enabled)
+        response.set_cookie(cookie, session, max_age=store.REMEMBER_SECONDS if enabled else None,
+                            httponly=True, samesite="Strict", secure=request.is_secure)
         return response
 
     @app.post("/api/auth/logout")

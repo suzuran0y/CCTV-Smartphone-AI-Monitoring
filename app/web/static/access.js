@@ -7,10 +7,14 @@ function updateAccessUI() {
   document.getElementById("accessStatus").textContent = admin ? "Administrator" : "Visitor";
   document.getElementById("loginForm").hidden = admin;
   document.getElementById("logoutBtn").hidden = !admin;
+  const remember = document.getElementById("rememberDeviceBtn");
+  remember.hidden = !admin;
+  remember.setAttribute("aria-pressed", String(Boolean(accessState.remembered)));
+  remember.textContent = accessState.remembered ? "Stop remembering this device" : "Remember this device for 30 days";
   document.getElementById("devicePanel").hidden = !admin;
   document.getElementById("mediaPanel").hidden = !admin;
   if (!admin) document.getElementById("mediaRows").replaceChildren();
-  document.querySelectorAll("#rightPane input, #rightPane select, #rightPane textarea, #rightPane button, #ingestToggleBtn, #recordToggleBtn, #snapshotBtn, #shutdownBtn")
+  document.querySelectorAll("#rightPane input, #rightPane select, #rightPane textarea, #rightPane button, #ingestToggleBtn, #recordToggleBtn, #snapshotBtn, #expandSettingsBtn, #shutdownBtn")
     .forEach(el => { el.disabled = !admin; });
   document.querySelector(".logs-box").hidden = !admin;
   const canView = admin || !accessState.viewer_auth_required;
@@ -75,10 +79,30 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       await refreshAccess();
+      document.getElementById("accessPanel").open = false;
       await refreshConfigForm();
       await refreshDevices();
-      document.getElementById("accessMessage").textContent = "Signed in. Log out when finished; session expires after 8 hours.";
+      document.getElementById("accessMessage").textContent = "Signed in. To stay signed in after closing, remember this device. Use this only on devices you trust.";
     } catch (_) { document.getElementById("accessMessage").textContent = "Cannot reach server."; }
+  };
+  document.getElementById("rememberDeviceBtn").onclick = async event => {
+    const button = event.currentTarget;
+    const message = document.getElementById("accessMessage");
+    button.disabled = true;
+    try {
+      const r = await fetchJson("/api/auth/remember", {method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({remember: !accessState.remembered})});
+      if (r.status !== 200) {
+        message.textContent = r.json?.error || "Could not update remembered sign-in.";
+        return;
+      }
+      accessState.remembered = r.json.remembered;
+      updateAccessUI();
+      message.textContent = r.json.remembered
+        ? "This browser will stay signed in for 30 days. Log out to end its session."
+        : "This browser is no longer remembered. The current session is valid for up to 8 hours.";
+    } catch (_) { message.textContent = "Cannot reach server."; }
+    finally { button.disabled = false; }
   };
   document.getElementById("logoutBtn").onclick = async () => {
     const r = await fetchJson("/api/auth/logout", {method: "POST"});

@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PhoneCam Dashboard</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='themes.css') }}">
+  {% if desktop_origin %}
+  <meta name="sentinel-desktop-origin" content="{{ desktop_origin }}">
+  <script src="{{ url_for('static', filename='desktop-theme.js') }}" defer></script>
+  {% endif %}
 </head>
 
 <body>
@@ -12,11 +17,15 @@
     <div class="brand">
       <div class="brand-title">Sentinel System Dashboard</div>
       <div class="brand-subtitle">
-        Vision Monitoring & Risk Detection System
+        <span>Vision Monitoring &amp; Risk Detection System</span>
+        {% if camflow_address %}
+        <span class="camflow-address">CamFlow · <code>{{ camflow_address }}</code></span>
+        {% endif %}
       </div>
     </div>
 
     <div class="topbar-actions">
+      <button id="expandSettingsBtn" type="button" aria-controls="rightPane" aria-expanded="false" hidden>Expand Settings</button>
       <button id="shutdownBtn" class="danger" type="button" title="Stop server and close this page">
         Shutdown
       </button>
@@ -26,7 +35,7 @@
   <details id="accessPanel" class="card access-panel" aria-label="Access and pairing">
     <summary>
       <strong id="accessStatus" role="status">Checking access…</strong>
-      <span class="access-panel-hint">Login &amp; camera pairing</span>
+      <span class="access-panel-hint">Login, remember device &amp; camera pairing</span>
     </summary>
     <div class="access-panel-body">
     <div class="row" style="gap:8px;flex-wrap:wrap">
@@ -35,6 +44,7 @@
         <button type="submit">Administrator login</button>
       </form>
       <button id="logoutBtn" type="button" hidden>Log out</button>
+      <button id="rememberDeviceBtn" type="button" aria-pressed="false" hidden>Remember this device for 30 days</button>
     </div>
     <p id="accessMessage" role="status" class="hint">Get the administrator token from the PC's first startup output. Visitors can view only in default mode.</p>
     <div id="devicePanel" hidden>
@@ -49,12 +59,12 @@
   <div class="layout">
     <!-- Left: Live view -->
     <div id="leftPane" class="pane left">
-      <div class="card">
+      <div class="card live-card">
         <div class="row" style="justify-content:space-between; align-items:center;">
           <b>Live View</b>
         </div>
 
-        <div style="margin-top:10px;">
+        <div class="live-preview" style="margin-top:10px;">
           <img id="live" alt="Live stream — sign in if privacy mode is enabled"/>
           <p id="frameState" class="frame-state" role="status" aria-live="polite">Checking camera status…</p>
           <p id="liveLocked" class="hint" hidden>Privacy mode — sign in to view this camera.</p>
@@ -120,7 +130,7 @@
       <div class="card">
         <div class="row" style="justify-content:space-between; align-items:center;">
           <b>Settings</b>
-          <button id="toggleSettingsBtn" type="button" onclick="toggleSettings()">Collapse</button>
+          <button id="toggleSettingsBtn" type="button" aria-controls="rightPane" aria-expanded="true">Collapse</button>
         </div>
 
         <div id="settingsBody">

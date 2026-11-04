@@ -30,12 +30,14 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
       - name: Compile Python sources
-        run: python -m compileall -q app server.py tests
+        run: python -m compileall -q app server.py sentinel_desktop.py tests
       - name: Check dashboard JavaScript syntax
         run: |
           node --check app/web/static/dashboard.js
           node --check app/web/static/access.js
           node --check app/web/static/media.js
+          node --check app/web/static/desktop-theme.js
+          node --check app/desktop/static/shell.js
 
   android:
     name: Android unit tests

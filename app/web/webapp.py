@@ -143,6 +143,9 @@ def create_app(cfg_store, frame_buf, stats, rec_rt, ai_rt, event_store, logger, 
     def dashboard():
         return render_template(
             "dashboard.html",
+            desktop_origin=(app.config.get("DESKTOP_ORIGIN", "")
+                            if request.host == app.config.get("DESKTOP_DASHBOARD_HOST") else ""),
+            camflow_address=app.config.get("CAMFLOW_ADDRESS"),
             sentinel_version=SENTINEL_VERSION,
             release_date=RELEASE_DATE,
         )

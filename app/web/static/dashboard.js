@@ -631,6 +631,7 @@ async function shutdownSystem(){
 
   const response = await fetchJson("/api/system/shutdown", {method:"POST"});
   if (response.status !== 200) { showMsg(response.json?.error || "Shutdown failed"); return; }
+  if (window.parent !== window) return; // The desktop host will observe the service exit.
 
   setTimeout(() => {
     try { window.open("", "_self"); } catch(e) {}
@@ -800,40 +801,20 @@ function toggleSettings(forceState) {
   const layout = document.querySelector(".layout");
   const right = document.getElementById("rightPane");
   const splitter = document.getElementById("splitter");
-  const btn = document.getElementById("toggleSettingsBtn");
+  const expand = document.getElementById("expandSettingsBtn");
 
   const collapsed = (forceState !== undefined)
     ? forceState
     : !right.classList.contains("collapsed");
 
-  if (collapsed) {
-    right.classList.add("collapsed");
-    splitter.classList.add("collapsed");
-    layout.classList.add("collapsed");
-
-    if (btn) btn.textContent = "Expand";
-    if (!document.getElementById("floatingExpandBtn")) {
-      const fb = document.createElement("button");
-      fb.id = "floatingExpandBtn";
-      fb.className = "floating-toggle";
-      fb.textContent = "Expand Settings";
-      fb.onclick = () => toggleSettings(false);
-      document.body.appendChild(fb);
-    }
-
-    try { localStorage.setItem("settingsCollapsed", "true"); } catch(e){}
-  } else {
-    right.classList.remove("collapsed");
-    splitter.classList.remove("collapsed");
-    layout.classList.remove("collapsed");
-
-    if (btn) btn.textContent = "Collapse";
-
-    const fb = document.getElementById("floatingExpandBtn");
-    if (fb) fb.remove();
-
-    try { localStorage.setItem("settingsCollapsed", "false"); } catch(e){}
+  right.classList.toggle("collapsed", collapsed);
+  splitter.classList.toggle("collapsed", collapsed);
+  layout.classList.toggle("collapsed", collapsed);
+  expand.hidden = !collapsed;
+  if (forceState === undefined) {
+    (collapsed ? expand : document.getElementById("toggleSettingsBtn")).focus();
   }
+  try { localStorage.setItem("settingsCollapsed", String(collapsed)); } catch(e){}
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -847,6 +828,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (ingestBtn) ingestBtn.addEventListener("click", toggleIngest);
   if (recordBtn) recordBtn.addEventListener("click", toggleRecording);
   if (shutdownBtn) shutdownBtn.addEventListener("click", shutdownSystem);
+  document.getElementById("toggleSettingsBtn").addEventListener("click", () => toggleSettings());
+  document.getElementById("expandSettingsBtn").addEventListener("click", () => toggleSettings());
   if (providerSelect) providerSelect.addEventListener("change", syncProviderUi);
 
   setTimeout(syncAiUi, 0);

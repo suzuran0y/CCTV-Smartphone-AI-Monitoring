@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-theme="modern">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sentinel Desktop</title>
+  <link rel="stylesheet" href="/static/shell.css">
+  <link rel="stylesheet" href="/theme.css">
+</head>
+<body class="desktop-shell">
+  <header class="launcher-bar">
+    <div class="brand"><b>Sentinel</b> <span>Desktop</span></div>
+    <div class="service-controls">
+      <button id="start" class="primary" disabled>Start Sentinel</button>
+      <button id="stop" disabled>Stop Sentinel</button>
+      <label>Appearance
+        <select id="theme">
+          <option value="modern">Default · Light</option>
+          <option value="dark">Default · Dark</option>
+          <option value="luna">Windows XP · Luna Blue</option>
+        </select>
+      </label>
+    </div>
+  </header>
+  <section id="token-panel" class="card token-panel" hidden>
+    <b>Administrator token</b>
+    <p>Save this token securely and use it to sign in to Dashboard.</p>
+    <input id="token" type="password" readonly aria-label="Administrator token">
+    <button id="reveal">Show token</button>
+    <button id="forget">I saved the token</button>
+  </section>
+  <main>
+    <section class="welcome card" id="welcome">
+      <h1>Sentinel monitoring service</h1>
+      <p>Start Sentinel to open Dashboard. Connect CamFlow using the PC's LAN address.</p>
+      <button id="reset" disabled>Reset administrator token</button>
+    </section>
+    <iframe id="dashboard" title="Sentinel Dashboard" hidden
+      sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals"></iframe>
+  </main>
+  <footer><span id="status" role="status">Connecting to the local control service…</span><span id="lan"></span><span id="error" role="alert"></span></footer>
+  <script src="/static/shell.js" defer></script>
+</body>
+</html>

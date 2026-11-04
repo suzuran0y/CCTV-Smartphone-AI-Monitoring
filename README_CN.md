@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.5-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.6-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,16 +12,16 @@
 
 本项目已被 [科技爱好者周刊](#CR) 和 [科技补全](#CR) 收录。感谢他们的认可与支持。
 
-🚀 最新更新（持续迭代中）：[v1.1.5 — 2026-10-29](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 最新更新（持续迭代中）：[v1.1.6 — 2026-11-05](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框架。
 
 <p align="center">
-  <img src="assets/readme_banner.png" alt="Sentinel Real-Time Monitoring System banner" width="92%">
+  <img src="assets/desktop-luna.png" alt="Windows XP Luna 蓝色主题下的 Sentinel 桌面窗口，显示实时预览、摄像头连接地址和设置面板" width="92%">
 </p>
 
 <p align="center">
-  <em>图 1 – 系统简示 (AI-generated — 作者不会画画 ·_· )</em>
+  <em>图 1 – Sentinel 桌面端（Windows XP · Luna Blue，画面为演示示例）</em>
 </p>
 
 ♻️ 支持将闲置安卓设备转化为网络摄像头节点，实现：
@@ -35,14 +35,6 @@ Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框�
 - 系统前端由 PC 端 Dashboard + CamFlow 安卓客户端组成。  
 
 本项目既可作为轻量级本地监控系统使用，亦可作为视觉数据采集与智能分析的工程原型平台。
-
-<p align="center">
-  <img src="assets/ai_monitoring_record.png" alt="Sentinel system running demo" width="92%">
-</p>
-
-<p align="center">
-  <em>图 2 – 系统运行展示（Dashboard + AI Monitoring）</em>
-</p>
 
 > 首次使用前强烈建议按顺序阅读章节，点击可跳转：  
 > ① [项目概览](#sec1) → ② [项目部署](#sec3) → ③ [运行项目](#sec4) → ④ [Dashboard 指南](#sec43)
@@ -78,7 +70,7 @@ Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框�
 
 - [5. 版本信息与项目说明](#sec5)
   - [5.1. 系统版本信息](#sec51)
-  - [5.2. 测试环境说明](#sec52)
+  - [5.2. 数据存放位置](#sec52)
   - [5.3. 后续规划](#sec53)
   - [5.4. 使用与授权说明](#sec54)
   - [5.5. 网络质量与排查说明](#network-quality)
@@ -285,7 +277,7 @@ Sentinel 提供基于浏览器的实时视频预览能力。Android 设备采集
 <img src="assets/dashboard_ingest_on.png" width="100%">
 
 <br>
-<b>图 3 - Dashboard 实时预览界面（全屏模式）</b>
+<b>图 2 - Dashboard 实时预览界面（全屏模式）</b>
 
 </td>
 </tr>
@@ -333,7 +325,7 @@ Sentinel 并非固定行为的“黑盒监控工具”，而是一套高度可�
 <img src="assets/dashboard_recording.png" width="100%">
 
 <br>
-<b>图 4 - Dashboard 参数控制界面（展开信息）</b>
+<b>图 3 - Dashboard 参数控制界面（展开信息）</b>
 
 </td>
 </tr>
@@ -385,7 +377,7 @@ SLEEP → OBSERVE 状态机、触发/持续时间统计、AI 调用健康监测.
 <img src="assets\ai_monitoring_record.png" width="100%">
 
 <br>
-<b>图 5 - 启用 AI 状态</b>
+<b>图 4 - 启用 AI 状态</b>
 
 </td>
 </tr>
@@ -416,7 +408,7 @@ CamFlow 将普通手机转化为实时摄像终端，并：
 
 #### ② 手动配置与连接
 
-- PC 端 `server.py` 启动后明确输出可填入 CamFlow 的 `IP:PORT`
+- Dashboard 副标题旁和命令行启动信息均会显示 CamFlow 所需的 `IP:PORT`
 - 首次启动 CamFlow 时手动输入该地址，以后启动会先测试已保存的连接
 - 严格校验 IP、端口及 HTTP/HTTPS 地址，并提供实时调试信息
 - 指定设备特定摄像头（代码接口）
@@ -441,7 +433,7 @@ CamFlow 与 PC 端形成“移动采集 + 本地处理”的完整系统架构�
 <img src="assets/app_main_page.jpg" width="40%">
 
 <br>
-<b>图 6 - CamFlow 应用界面</b>
+<b>图 5 - CamFlow 应用界面</b>
 
 </td>
 </tr>
@@ -481,6 +473,8 @@ Sentinel/
 ├── CamFlow_UserGuide.md          # 安卓端使用说明
 ├── requirements.txt              # 安装依赖
 ├── version.properties            # PC 端、Android 端和文档共用的版本信息
+├── Sentinel.cmd                  # Windows 桌面启动入口
+├── sentinel_desktop.py           # 桌面窗口与服务启停
 ├── .gitignore                    # 忽略项
 ├── LICENSE                       # MIT License
 │
@@ -613,6 +607,12 @@ opencv-python>=4.8             # 图像解码与视频写入
 volcenginesdkarkruntime        # AI 模块依赖
 ```
 
+#### 3.3.3. Windows 桌面端
+
+在 Windows 10 或 11 上，双击项目根目录的 [Sentinel.cmd](Sentinel.cmd)。首次使用请先安装 Python 3.12，并在提示出现时同意创建 `.venv` 和安装桌面依赖。若 Sentinel 提示缺少 Microsoft Edge WebView2 Evergreen Runtime，安装后重新打开。
+
+使用 Windows x64 目录版时，保留完整的 `Sentinel` 文件夹并双击 `Sentinel.exe`。打包版和数据目录的用法见 [Windows 桌面指南](docs/Sentinel_Desktop_CN.md)。
+
 ---
 
 <a id="sec34"></a>
@@ -663,15 +663,7 @@ PhoneCamSender/CamFlow-v1.1.2.apk
 
 ## 4. 运行项目 [⌃](#top)
 
-> 当完成项目部署后，通过 **PC 端启动 → 手机端连接 → Dashboard 可见画面** 的全链路来确保整条链路畅通。  
----
-
-**你应该看到的成功标志：**
-- 终端输出类似 `http://127.0.0.1:<PORT>/` 与 `http://<LAN_IP>:<PORT>/`
-- 浏览器能打开 Dashboard 页面
-- 手机端 Test connection / Ping 成功（或状态提示连接成功）
-
-> 注意：PC 端启动后，系统会将某些开关重置为默认安全状态（例如 ingest / recording 默认关闭）。这是正常设计，用于避免误录制或误接收数据。
+> 先在 PC 端启动 Sentinel，再让 CamFlow 通过局域网连接，最后在 Dashboard 打开 **Ingest** 查看画面。每次启动时，接收和录像默认关闭。
 
 ---
 
@@ -679,29 +671,24 @@ PhoneCamSender/CamFlow-v1.1.2.apk
 
 ### 4.1. 启动 PC 端（Server + Dashboard） [⌃](#top)
 
+<a id="desktop-start"></a>
+
+#### 4.1.1. Windows 桌面端
+
+1. 双击 **Sentinel.cmd**，然后点击 **Start Sentinel**。
+2. 首次使用时点击 **Show token**，保存令牌后在 Dashboard 顶部的权限面板中输入。点击 **I saved the token** 可收起令牌提示区。
+3. 在手机端填入 Dashboard 副标题旁的 **CamFlow** 地址。按[摄像头配对步骤](#camera-pairing)操作，再打开 **Ingest**。
+4. 点击 **Stop Sentinel** 可结束当前录像并停止服务。最小化时服务继续运行。运行中关闭窗口时，程序会询问是否停止服务并退出。
+
+#### 4.1.2. 命令行与浏览器
+
 在项目根目录运行：
 
 ```bash
 python server.py
 ```
 
-启动成功后，你应该在终端看到类似输出：
-
-```
-===========================================================
-PhoneCam Server Started
-Local:   http://127.0.0.1:<PORT>/        for dashboard web  # 网页端推荐使用地址
-LAN:     http://<LAN_IP>:<PORT>/         for CamFlow link   # 设备端 CamFlow 连接使用地址
-Default ingest: OFF (enable in dashboard)
-===========================================================
-
-* Serving Flask app 'app.web.webapp'
-* Debug mode: off
-```
-
-> ⚠️ 注意：摄像设备端要填写 LAN 地址。启动成功但未开启 ingest 时，Live View 为空属于正常现象。
-
-首次启动时，终端还会显示一次管理员令牌，请妥善保存。在 Dashboard 展开 **Login & camera pairing** 登录；令牌恢复与会话规则见[管理员登录与令牌管理](#admin-access)。
+在 PC 浏览器中打开终端显示的 **Dashboard** 地址。首次启动时，终端也会显示管理员令牌。同一局域网内的其他设备可用浏览器打开 **LAN Web** 地址，手机 CamFlow 应填写标为 **CamFlow** 的地址。
 
 ---
 
@@ -718,7 +705,7 @@ Default ingest: OFF (enable in dashboard)
 
 - CamFlow 默认采用手动地址配置，不再尝试自动发现服务器。
 - 首次启动时，App 会提示输入 Sentinel 服务器地址。
-- 在 PC 端运行 `server.py`，将启动输出中 `CamFlow:` 后的地址填入 App：
+- 在 PC 端启动 Sentinel，将 Dashboard 副标题旁或终端中标为 **CamFlow** 的地址填入 App：
 
 ```
 CamFlow:    192.168.1.10:8000
@@ -734,9 +721,9 @@ CamFlow:    192.168.1.10:8000
 
 **Test connection** 成功仅说明服务器可达，不代表具有上传权限。详见[摄像头配对](#camera-pairing)与手机端[配对步骤](CamFlow_UserGuide_CN.md#camera-pairing)。
 
-#### 4.2.4. PC 端验证
+#### 4.2.4. 在 PC 端查看画面
 
-- 在 CamFlow 中确认链接成功后，在 PC 端打开浏览器输入先前 `server.py` 输出的 dashboard 地址，进入 dashboard 页面。
+- 在桌面窗口查看 Dashboard，或在浏览器中打开终端显示的 Dashboard 地址。
 
 - 由于 `Ingest` 默认为 `off` 状态，因此初打开页面时 Live View 栏不会显示摄像端画面而是 `Ingest OFF - enable in dashboard`。
 
@@ -760,8 +747,9 @@ CamFlow:    192.168.1.10:8000
 Dashboard 的布局分为三部分：顶部栏 + 左侧监控区 + 右侧设置区
 
 - **顶部栏**
-  - 标题：`Sentinel System Dashboard` & 副标题：`Multi-Device Vision Monitoring & Risk Detection System`
-  - **Login & camera pairing**：默认折叠，展开后可登录、退出及管理设备
+  - 标题为 `Sentinel System Dashboard`，副标题为 `Vision Monitoring & Risk Detection System`。
+  - **权限面板**在加载页面及登录成功后自动收起。展开后可登录、记住设备、退出及管理配对摄像头。
+  - 局域网可用时，副标题旁的 **CamFlow** 显示要在手机端输入的服务地址。
   - 按钮：`Shutdown`（仅管理员）
 - **左侧面板**
   - `Live View`：实时画面预览 + 快捷控制按钮
@@ -772,7 +760,7 @@ Dashboard 的布局分为三部分：顶部栏 + 左侧监控区 + 右侧设置�
   - `Apply / Save / Load`：配置应用与读写
 
 > 中间的页面分隔条设计为可拖动，用于调整两侧面板显示占比；  
-> 点击 `Collapse` 按钮以折叠右侧 Settings 面板来扩大 Live View 区域，后续可以点击 `Expanding Settings` 按钮来展开已折叠区域。
+> 点击 `Collapse` 折叠设置区，扩大 Live View。点击 `Shutdown` 左侧的 `Expand Settings` 可重新展开。桌面窗口较窄时，设置区会移到监控区下方。
 
 ---
 
@@ -939,11 +927,11 @@ Live View 下方有三个按钮，其在初始状态下默认未开启：`Enable
 
 #### 4.3.7. 管理员登录与令牌恢复
 
-展开顶部 **Login & camera pairing**，输入 PC 首次启动时显示一次的管理员令牌。该栏每次加载页面默认折叠，登录、退出和设备管理均在展开后操作。
+展开顶部权限面板，输入 PC 首次启动时显示一次的管理员令牌。面板在加载页面及登录成功后自动收起。
 
-服务端仅保存令牌的加盐摘要，不保存明文。管理会话有效期为 8 小时，使用不持久化的 HttpOnly / SameSite Cookie。请主动退出；部分浏览器恢复窗口时也会恢复会话 Cookie。
+管理员会话默认最多持续 8 小时。在可信设备上，可在登录后重新展开权限面板，点击 **Remember this device for 30 days**。以后打开同一浏览器或桌面端时可保持登录。点击 **Stop remembering this device** 可关闭记忆，点击 **Log out** 可立即退出。重置管理员令牌会结束所有管理员会话。
 
-丢失令牌时，在 PC 本机运行 `python server.py --reset-admin-token`。命令显示新令牌后退出，旧令牌和全部管理会话随即失效，已配对手机不受影响。`app/config/auth.sqlite3` 不得提交或分享；本机文件访问仍需操作系统权限保护。
+丢失令牌时，先停止 Sentinel，再在桌面窗口点击 **Reset administrator token**。命令行部署可在停止服务后使用同一数据目录运行 `python server.py --reset-admin-token`。请保存新令牌，已配对手机可以继续使用。
 
 <a id="privacy-mode"></a>
 
@@ -1001,6 +989,26 @@ Settings 中分别配置 **Frame stale after (sec)** 和 **Pause recording after
 仅展示当前输出目录下按系统命名规则保存的录像和截图，也可显示符合规则的历史文件。正在写入的录像段不展示且不能下载，片段关闭后刷新即可；下载受管理员权限保护，配对手机和访客均不可访问。不会跟随符号链接或 Windows 目录联接。
 
 切换 Output Root 后只浏览新目录，旧目录保留在本地。自动清理可能移除列表中的文件，此时刷新列表即可；可浏览历史文件不代表它们已纳入自动清理登记。
+
+---
+
+<a id="desktop-appearance"></a>
+
+#### 4.3.13. 桌面外观
+
+通过桌面工具栏的 **Appearance** 切换 **Default · Light**、**Default · Dark** 和 **Windows XP · Luna Blue**。Sentinel 会记住所选主题，切换时保持画面和当前登录状态。[Luna Blue 效果见图 1](#top)。
+
+<p align="center">
+  <img src="assets/desktop-light.png" alt="默认浅色模式下的 Sentinel 桌面端" width="88%">
+</p>
+
+<p align="center"><em>Sentinel 桌面端 – 默认 · 浅色模式</em></p>
+
+<p align="center">
+  <img src="assets/desktop-dark.png" alt="默认深色模式下的 Sentinel 桌面端" width="88%">
+</p>
+
+<p align="center"><em>Sentinel 桌面端 – 默认 · 深色模式</em></p>
 
 ---
 
@@ -1631,33 +1639,26 @@ Only output one JSON object. Do not output markdown or extra explanations.
 
 Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 组成，当前版本信息如下：
 
-- **Sentinel（PC + Dashboard）版本**：v1.1.5
+- **Sentinel（PC + Dashboard）版本**：v1.1.6
 - **CamFlow（Android 源码）版本**：v1.1.2
 - **仓库内 CamFlow APK 版本**：v1.1.2（debug-signed）
-- **本文档版本**：v1.1.5
-- **最后更新日期**：2026-10-29
+- **本文档版本**：v1.1.6
+- **最后更新日期**：2026-11-05
 
-所有运行时版本统一定义于根目录 `version.properties`。PC 端通过 `app/version.py` 读取，供 Dashboard 页脚、启动信息和 `/api/version` 共用；Android Gradle 构建和设置页读取同一文件，不再单独硬编码版本号。CamFlow 继续使用 v1.1.2，无需因 PC 端本次更新重新安装。
+Dashboard 页脚显示当前 PC 版本。手机端继续使用 **CamFlow v1.1.2**。
 
 ---
 
 <a id="sec52"></a>
 
-### 5.2. 测试环境说明 [⌃](#top)
+### 5.2. 数据存放位置 [⌃](#top)
 
-以下为项目部署要求与历史设备环境，具体运行效果取决于设备及网络：
+| 启动方式 | 默认数据目录 |
+| --- | --- |
+| Windows 桌面端 | `%LOCALAPPDATA%\Sentinel` |
+| `python server.py` | 项目根目录 |
 
-- PC 端（Server + Dashboard）
-  - **操作系统**：Windows 10 / Windows 11
-  - **Python 版本**：Python 3.9+
-  - **主要依赖**：Flask、OpenCV、NumPy、volcenginesdkarkruntime
-  - **网络环境**：同一局域网（LAN / 同一 Wi-Fi）
-
-- Android 端（CamFlow）
-  - **系统版本**：Android 8.0+
-  - **测试设备**：nova 8 SE 活力版（HarmonyOS 3.0.0）
-  - **网络环境**：与 PC 同一 Wi-Fi / 同一局域网
-  - **权限要求**：Camera（首次启动会请求）
+每个数据目录分别保存设置、配对记录、日志及默认的 `recordings` 目录。若要在桌面端沿用已有数据，先停止旧服务，再通过 `--data-dir` 指定原数据目录。命令示例见 [Windows 桌面指南](docs/Sentinel_Desktop_CN.md#本地数据与旧部署)。
 
 ---
 

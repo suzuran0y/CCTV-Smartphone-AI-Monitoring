@@ -40,7 +40,7 @@
 
 - [5. Version Information & Notes](#sec5)
   - [5.1 System Version](#sec51)
-  - [5.2 Test Environment](#sec52)
+  - [5.2 Connection Requirements](#sec52)
   - [5.3 Roadmap](#sec53)
   - [5.4 Usage & License](#sec54)
 
@@ -136,7 +136,7 @@ CamFlow provides the following core functionalities:
 
 #### 2. Server Address Configuration
 
-- Print a copy-ready CamFlow `IP:PORT` when PC-side `server.py` starts;
+- Show the CamFlow `IP:PORT` next to the PC Dashboard subtitle and in command-line startup output.
 - Request and save this address on first use, then test the saved address on subsequent launches.
 
 ---
@@ -167,7 +167,7 @@ CamFlow provides the following core functionalities:
 
 ### 1.3. Installation [⌃](#top)
 
-Use CamFlow v1.1.2 with Sentinel v1.1.5 (also compatible with Sentinel v1.1.4). Older v1.1.0 / v1.1.1 clients cannot upload to the authenticated server. Review [network quality and troubleshooting](#network-quality) before deployment.
+Use CamFlow v1.1.2 with Sentinel v1.1.6. This APK also works with Sentinel v1.1.4 and v1.1.5. Older CamFlow v1.1.0 and v1.1.1 clients cannot pair with the authenticated server.
 
 #### 1.3.1. Standard User Installation (APK Package)
 
@@ -234,12 +234,12 @@ If the server has not yet been connected, the application will typically display
 
 #### 2.2.1. Manual Input
 
-On first launch, CamFlow displays a prompt requesting the Sentinel server address. Start `server.py` on the PC first, then enter the address shown after `CamFlow:` in its startup output.
+On first launch, CamFlow asks for the Sentinel server address. [Start Sentinel on the PC](README.md#sec41), then copy the address labeled **CamFlow** beside the Dashboard subtitle. If you started Sentinel from the command line, the address also appears in the terminal.
 
 Prompt explanation and input format:
 
 - **Enter Sentinel server address**
-  - Enter the CamFlow address printed by `server.py`.
+  - Enter the address labeled **CamFlow** on the PC.
   - Input the server IP address.
   - If using a non-default port, append the port number.
 
@@ -372,7 +372,7 @@ Before using CamFlow, ensure the following conditions are met:
 
 #### 2.4.2. Deployment Workflow
 
-1. Start Sentinel on the PC, save the first-run administrator token and find `CamFlow: <PC_IP>:<PORT>`.
+1. Start Sentinel on the PC, save the first-run administrator token and find the **CamFlow** address in Dashboard.
 2. Connect the phone and PC to the same trusted LAN; enter that address in CamFlow and test connectivity.
 3. Sign into Dashboard as administrator and click **Add CamFlow**.
 4. Enter the device name and code in phone Settings; tap **Pair / Re-pair**, then **Save**.
@@ -396,7 +396,7 @@ Before using CamFlow, ensure the following conditions are met:
 
 <summary><strong>Which address should I enter on first use?</strong></summary>
 
-1. Run `python server.py` on the PC.
+1. [Start Sentinel on the PC](README.md#sec41).
 2. Find `CamFlow: <PC_IP>:8000` in the terminal output.
 3. Enter `<PC_IP>:8000` in the app and select **Connect**, or use **Test connection** in Settings first.
 4. If it fails, visit `http://<PC_IP>:8000/ping` in the phone browser and check the PC firewall, same-Wi-Fi connection, and AP isolation settings.
@@ -742,37 +742,18 @@ Current version information:
 - **CamFlow (Android source) Version**: v1.1.2
 - **Bundled APK Version**: v1.1.2 (debug-signed)
 - **This Document Version**: v1.1.2
-- **Last Updated**: 2026-09-26
+- **Last Updated**: 2026-11-05
 
 ---
 
 <a id="sec52"></a>
 
-### 5.2. Test Environment [⌃](#top)
+### 5.2. Connection Requirements [⌃](#top)
 
-Local validation passed 19 Android unit tests and main/instrumentation APK builds; Android CI also passed. Build 9 completed a basic real-device retest. Keystore instrumentation tests have not run on a device, and sustained/background operation has not completed separate acceptance. The earlier upload report was traced to test-environment Wi-Fi quality; see [network quality and troubleshooting](#network-quality).
-
-The following environments are historical test records, not a complete current-release test matrix:
-
----
-
-#### Android Side
-
-- OS Version: Android 10 and above  
-- Test Device: nova 8 SE Vitality Edition — HarmonyOS 3.0.0  
-- Network: Same LAN (Wi-Fi)
-
----
-
-#### PC Side
-
-- OS: Windows 10 / Windows 11  
-- Python Version: Python 3.9+  
-- Dependencies: Flask, OpenCV, Requests, etc.  
-- Network: Local Area Network (LAN)
-
-> It is not recommended to expose the service directly to the public Internet.  
-> Administrator authentication and camera pairing are implemented, but authentication does not encrypt HTTP traffic. Use a trusted LAN or configure HTTPS.
+- Grant camera permission when CamFlow asks for it.
+- Connect the phone and PC to the same trusted local network.
+- Use the address shown beside the Dashboard subtitle. If you changed the PC port, include it in the address.
+- Use HTTPS when the connection needs transport encryption.
 
 ---
 

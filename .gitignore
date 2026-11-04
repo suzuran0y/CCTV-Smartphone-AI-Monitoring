@@ -29,6 +29,8 @@ recordings/*
 app/config/config.json
 app/config/config.json.tmp
 app/config/auth.sqlite3*
+app/config/.sentinel-service.lock
+.sentinel-desktop/
 CODEX_MODIFICATION_LOG.md
 .local-validation/
 

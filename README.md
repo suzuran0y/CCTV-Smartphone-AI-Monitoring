@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
 [![GitHub forks](https://img.shields.io/github/forks/suzuran0y/CCTV-Smartphone-AI-Monitoring?style=social)](#stars)
-[![Version](https://img.shields.io/badge/version-v1.1.5-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+[![Version](https://img.shields.io/badge/version-v1.1.6-black)](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 [![Python](https://img.shields.io/badge/python-3.9%2B-yellow)](https://www.python.org/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-green)](CamFlow_UserGuide.md)
 <br>
@@ -12,16 +12,16 @@
 
 This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
 
-🚀 Latest Update (ongoing): [v1.1.5 — 2026-10-29](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
+🚀 Latest Update (ongoing): [v1.1.6 — 2026-11-05](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
 <p align="center">
-  <img src="assets/readme_banner.png" width="92%">
+  <img src="assets/desktop-luna.png" alt="Sentinel Desktop in Windows XP Luna Blue with Live View, camera address, and Settings" width="92%">
 </p>
 
 <p align="center">
-  <em>Figure 1 – System banner (AI-generated — author's drawing skills not implemented ·_· )</em>
+  <em>Figure 1 – Sentinel Desktop (Windows XP theme· Luna Blue, with a sample feed)</em>
 </p>
 
 ♻️ It repurposes unused Android devices as network camera nodes, enabling:
@@ -35,14 +35,6 @@ It adopts a layered architecture of **“mobile capture + PC processing + browse
 - The system consists of a PC Dashboard and an Android client CamFlow.
 
 This project can be used both as a lightweight local monitoring system and as an engineering prototype platform for visual data acquisition and intelligent analysis.
-
-<p align="center">
-  <img src="assets/ai_monitoring_record.png" alt="Sentinel system running demo" width="92%">
-</p>
-
-<p align="center">
-  <em>Figure 2 – System demonstration（Dashboard + AI Monitoring）</em>
-</p>
 
 > Before first use, it is strongly recommended to read the chapters in order. Click to jump:  
 > ① [Project Overview](#sec1) → ② [Project Deployment](#sec3) → ③ [Run the Project](#sec4) → ④ [Dashboard Guide](#sec43)
@@ -78,7 +70,7 @@ This project can be used both as a lightweight local monitoring system and as an
 
 - [5. Version Information & Notes](#sec5)
   - [5.1. System Version](#sec51)
-  - [5.2. Test Environment](#sec52)
+  - [5.2. Data Locations](#sec52)
   - [5.3. Roadmap](#sec53)
   - [5.4. Usage & License](#sec54)
   - [5.5. Network Quality and Troubleshooting](#network-quality)
@@ -278,7 +270,7 @@ This mechanism has the following characteristics:
 
 - **Fully localized storage and data control** — unlike traditional monitoring solutions that rely on SD cards or cloud storage, Sentinel saves video data directly on the LAN PC. Local disk storage avoids cloud service fees and third-party data risks, and also facilitates subsequent data analysis, model training, or secondary processing.
 
-</td> <td width="45%" align="center"> <img src="assets/dashboard_ingest_on.png" width="100%"> <br> <b>Figure 3 - Dashboard Live Preview Interface (Full-screen Mode)</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets/dashboard_ingest_on.png" width="100%"> <br> <b>Figure 2 - Dashboard Live Preview Interface (Full-screen Mode)</b> </td> </tr> </table>
 
 ---
 
@@ -311,7 +303,7 @@ Configures segmented writing and video encoding to avoid oversized single files 
 
 These parameters allow adjustments to “AI trigger sensitivity” and “model decision logic” via the Settings page, optimizing token usage and enabling personalized monitoring scenarios.
 
-</td> <td width="45%" align="center"> <img src="assets/dashboard_recording.png" width="100%"> <br> <b>Figure 4 - Dashboard Parameter Control Interface (Expanded View)</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets/dashboard_recording.png" width="100%"> <br> <b>Figure 3 - Dashboard Parameter Control Interface (Expanded View)</b> </td> </tr> </table>
 
 ---
 
@@ -356,7 +348,7 @@ Prompt Template (role definition), Scene Profile (long-term scene context), Sess
 
 to make model behavior programmable and controllable.
 
-</td> <td width="45%" align="center"> <img src="assets\ai_monitoring_record.png" width="100%"> <br> <b>Figure 5 - AI Enabled Status</b> </td> </tr> </table>
+</td> <td width="45%" align="center"> <img src="assets\ai_monitoring_record.png" width="100%"> <br> <b>Figure 4 - AI Enabled Status</b> </td> </tr> </table>
 
 ---
 
@@ -383,7 +375,7 @@ CamFlow transforms an ordinary smartphone into a real-time camera endpoint and:
 
 #### ② Manual Configuration and Connection
 
-- Prints a copy-ready `IP:PORT` for CamFlow when PC-side `server.py` starts
+- Displays the CamFlow `IP:PORT` beside the Dashboard subtitle and in command-line startup output
 - Requests this address on first launch and tests the saved connection on subsequent launches
 - Validates IP, port, and HTTP/HTTPS addresses and provides real-time diagnostics
 - Allows specifying a particular device camera (code-level interface)
@@ -408,7 +400,7 @@ enabling the construction of a real-time vision system without additional hardwa
 <img src="assets/app_main_page.jpg" width="40%">
 
 <br>
-<b>Figure 6 - CamFlow Application Interface</b>
+<b>Figure 5 - CamFlow Application Interface</b>
 
 </td>
 </tr>
@@ -447,6 +439,8 @@ Sentinel/
 ├── CamFlow_UserGuide.md          # Android user guide
 ├── requirements.txt              # Dependency installation list
 ├── version.properties            # Shared version metadata for PC, Android, and documentation
+├── Sentinel.cmd                  # Windows desktop entry point
+├── sentinel_desktop.py           # Desktop window and service controls
 ├── .gitignore                    # Git ignore rules
 ├── LICENSE                       # MIT License
 │
@@ -583,6 +577,12 @@ opencv-python>=4.8             # Image decoding and video writing
 volcenginesdkarkruntime        # AI module dependency
 ```
 
+#### 3.3.3. Windows Desktop
+
+On Windows 10 or 11, double-click [Sentinel.cmd](Sentinel.cmd) in the project root. For the first launch, install Python 3.12 and accept the prompt to create `.venv` and install the desktop dependencies. If Sentinel prompts for Microsoft Edge WebView2 Evergreen Runtime, install it and open Sentinel again.
+
+If you are using the Windows x64 package, keep the `Sentinel` folder intact and double-click `Sentinel.exe`. See the [Windows desktop guide](docs/Sentinel_Desktop.md) for package and data-folder instructions.
+
 ---
 
 <a id="sec34"></a>
@@ -634,18 +634,7 @@ For developers who want to debug or modify features, the app can be built from s
 
 ## 4. Run the Project [⌃](#top)
 
-> After completing project deployment, verify the entire pipeline in the order of **Start PC → Connect Mobile → Dashboard Displays Video** to ensure the full chain is functioning correctly.  
-
----
-
-**You should observe the following success indicators:**
-
-- The terminal outputs something like `http://127.0.0.1:<PORT>/` and `http://<LAN_IP>:<PORT>/`
-- The browser successfully opens the Dashboard page
-- The mobile app shows successful Test connection / Ping (or a connected status message)
-
-> Note: After the PC side starts, certain switches will reset to default safe states (for example, ingest / recording are OFF by default).  
-> This is intentional design to prevent unintended recording or data reception.
+> Start Sentinel on the PC, connect CamFlow over the local network, then enable **Ingest** in Dashboard to see the camera. Ingest and recording start switched off.
 
 ---
 
@@ -653,29 +642,24 @@ For developers who want to debug or modify features, the app can be built from s
 
 ### 4.1. Start the PC Side (Server + Dashboard) [⌃](#top)
 
-Run the following command in the project root directory:
+<a id="desktop-start"></a>
+
+#### 4.1.1. Windows Desktop
+
+1. Double-click **Sentinel.cmd** and click **Start Sentinel**.
+2. On first use, click **Show token**, save the token, and enter it in the access panel at the top of Dashboard. Click **I saved the token** to dismiss the token panel.
+3. Enter the **CamFlow** address next to the Dashboard subtitle in the phone app. Follow the [camera pairing steps](#camera-pairing), then enable **Ingest**.
+4. Click **Stop Sentinel** to finish the current recording and stop the service. Minimizing keeps it running. Closing the window while the service is running asks whether to stop and exit.
+
+#### 4.1.2. Command Line and Browser
+
+From the project root, run:
 
 ```bash
 python server.py
 ```
 
-After successful startup, you should see output similar to:
-
-```
-===========================================================
-PhoneCam Server Started
-Local:   http://127.0.0.1:<PORT>/        for dashboard web  # Recommended address for browser
-LAN:     http://<LAN_IP>:<PORT>/         for CamFlow link   # Address for CamFlow device connection
-Default ingest: OFF (enable in dashboard)
-===========================================================
-
-* Serving Flask app 'app.web.webapp'
-* Debug mode: off
-```
-
-> ⚠️ Important: The camera device must use the LAN address. If the server starts successfully but ingest is not enabled, the Live View being empty is normal behavior.
-
-On first startup, the terminal also displays the administrator token once. Save it securely, then expand **Login & camera pairing** in Dashboard to sign in. Token recovery and session rules are described under [Administrator access](#admin-access).
+Open the **Dashboard** address printed in the terminal on the PC. The terminal displays the administrator token on first startup. Other devices on the same network can open the **LAN Web** address in a browser. For the phone app, use the address labeled **CamFlow**.
 
 ---
 
@@ -692,7 +676,7 @@ On first startup, the terminal also displays the administrator token once. Save 
 
 - CamFlow now uses manual address configuration and does not attempt automatic server discovery.
 - On first launch, the app prompts for the Sentinel server address.
-- Run `server.py` on the PC and enter the address shown after `CamFlow:` in its startup output:
+- Start Sentinel on the PC and enter the **CamFlow** address shown beside the Dashboard subtitle or in the terminal:
 
 ```
 CamFlow:    192.168.1.10:8000
@@ -708,9 +692,9 @@ You can change the address later in Settings. Use `Test connection` first, then 
 
 A successful **Test connection** only confirms reachability, not upload permission. See [camera pairing](#camera-pairing) and the phone-side [pairing procedure](CamFlow_UserGuide.md#camera-pairing).
 
-#### 4.2.4. PC-side Verification
+#### 4.2.4. View the Camera on the PC
 
-- After confirming successful connection in CamFlow, open the browser on the PC and enter the Dashboard address printed by `server.py`.
+- Open Dashboard in the desktop window or in a browser at the address printed in the terminal.
 
 - Since `Ingest` is OFF by default, the Live View section will initially display `Ingest OFF - enable in dashboard` instead of the camera feed.
 
@@ -736,8 +720,9 @@ For detailed usage instructions of CamFlow, please refer to the repository docum
 The layout of the Dashboard is divided into three sections: top bar + left monitoring panel + right settings panel.
 
 - **Top Bar**
-  - Title: `Sentinel System Dashboard` & Subtitle: `Multi-Device Vision Monitoring & Risk Detection System`
-  - **Login & camera pairing**: collapsed by default; expand for sign-in, logout and device management
+  - Title: `Sentinel System Dashboard` and subtitle: `Vision Monitoring & Risk Detection System`
+  - **Access panel** is collapsed on load and after sign-in. Expand it to sign in, remember this device, log out or manage paired cameras.
+  - **CamFlow** next to the subtitle shows the server address to enter on the phone when LAN access is available.
   - Button: `Shutdown` (administrator only)
 - **Left Panel**
   - `Live View`: real-time video preview + quick control buttons
@@ -749,7 +734,7 @@ The layout of the Dashboard is divided into three sections: top bar + left monit
 
 > The divider between panels is draggable, allowing adjustment of the display ratio;  
 > Click the `Collapse` button to hide the right-side Settings panel and enlarge the Live View area.  
-> Later, click `Expanding Settings` to reopen the collapsed section.
+> Click `Expand Settings` to the left of `Shutdown` to reopen the panel. In a narrow desktop window, Settings appears below the monitoring area.
 
 ---
 
@@ -924,11 +909,11 @@ Adjust these fields in Settings and click **Apply** as an administrator; enablin
 
 #### 4.3.7. Administrator Access and Token Recovery
 
-Expand the top **Login & camera pairing** row and enter the administrator token printed once by the PC on first startup. The row starts collapsed on every page load and also contains logout and device-management controls.
+Expand the access panel at the top and enter the administrator token shown once by the PC on first startup. The panel starts collapsed on every page load and closes after a successful sign-in.
 
-The server stores a salted token hash, not the plaintext token. Administrator sessions last 8 hours and use a non-persistent HttpOnly / SameSite cookie. Log out explicitly: some browsers restore session cookies when restoring windows.
+By default, an administrator session lasts up to 8 hours. On a trusted device, reopen the access panel after signing in and select **Remember this device for 30 days** to stay signed in when reopening the same browser or desktop app. Select **Stop remembering this device** to turn this off, or **Log out** to end the session immediately. Resetting the administrator token ends all administrator sessions.
 
-To recover access, run `python server.py --reset-admin-token` locally on the PC. It prints a replacement token and exits; the old token and all administrator sessions become invalid, while paired cameras remain valid. Keep `app/config/auth.sqlite3` private and out of version control. Local filesystem access still needs OS permissions.
+If you lose the token, stop Sentinel and select **Reset administrator token** in the desktop window. For a command-line installation, stop the service and run `python server.py --reset-admin-token` with the same data directory. Save the replacement token. Paired cameras can continue using their existing credentials.
 
 <a id="privacy-mode"></a>
 
@@ -986,6 +971,26 @@ After administrator login, expand **Recordings & Snapshots** on the left. Select
 Only recordings and snapshots under the current Output Root that follow the system's filename rules are listed, including matching historical files. The active recording segment is hidden and cannot be downloaded; refresh after it closes. Downloads require administrator login; visitors and paired phones cannot access them. Symbolic links and Windows junctions are rejected.
 
 Changing Output Root switches the browser to that directory; old directories remain on disk. Cleanup may remove a listed file before download, in which case refresh the list. Listing a historical file does not register it for automatic cleanup.
+
+---
+
+<a id="desktop-appearance"></a>
+
+#### 4.3.13. Desktop Appearance
+
+Use **Appearance** in the desktop toolbar to switch between **Default · Light**, **Default · Dark**, and **Windows XP · Luna Blue**. Sentinel remembers the selected theme. The live view and current sign-in stay open while you switch. [Luna Blue is shown in Figure 1](#top).
+
+<p align="center">
+  <img src="assets/desktop-light.png" alt="Sentinel Desktop in the default light theme" width="88%">
+</p>
+
+<p align="center"><em>Sentinel Desktop – Default · Light</em></p>
+
+<p align="center">
+  <img src="assets/desktop-dark.png" alt="Sentinel Desktop in the default dark theme" width="88%">
+</p>
+
+<p align="center"><em>Sentinel Desktop – Default · Dark</em></p>
 
 ---
 
@@ -1640,33 +1645,26 @@ Only output one JSON object. Do not output markdown or extra explanations.
 The Sentinel system consists of **PC-side service program + Web Dashboard + Android CamFlow client**.  
 The current version information is as follows:
 
-- **Sentinel (PC + Dashboard) Version**: v1.1.5
+- **Sentinel (PC + Dashboard) Version**: v1.1.6
 - **CamFlow (Android source) Version**: v1.1.2
 - **Bundled CamFlow APK Version**: v1.1.2 (debug-signed)
-- **Documentation Version**: v1.1.5
-- **Last Updated**: 2026-10-29
+- **Documentation Version**: v1.1.6
+- **Last Updated**: 2026-11-05
 
-All runtime versions are defined once in the root `version.properties`. The PC loads it through `app/version.py` for the Dashboard footer, startup output, and `/api/version`; the Android Gradle build and settings page read the same file instead of keeping separate hardcoded versions. CamFlow remains at v1.1.2; this PC update does not require reinstalling the phone app.
+The Dashboard footer shows the current PC version. Continue using **CamFlow v1.1.2** with this PC release.
 
 ---
 
 <a id="sec52"></a>
 
-### 5.2. Test Environment [⌃](#top)
+### 5.2. Data Locations [⌃](#top)
 
-The following describes deployment requirements and historical device environments; results depend on the device and network:
+| Entry point | Default data folder |
+| --- | --- |
+| Windows desktop | `%LOCALAPPDATA%\Sentinel` |
+| `python server.py` | Project root |
 
-- PC Side (Server + Dashboard)
-  - **Operating System**: Windows 10 / Windows 11
-  - **Python Version**: Python 3.9+
-  - **Main Dependencies**: Flask, OpenCV, NumPy, volcenginesdkarkruntime
-  - **Network Environment**: Same local area network (LAN / same Wi-Fi)
-
-- Android Side (CamFlow)
-  - **System Version**: Android 8.0+
-  - **Test Device**: nova 8 SE Vitality Edition (HarmonyOS 3.0.0)
-  - **Network Environment**: Same Wi-Fi / same LAN as PC
-  - **Required Permission**: Camera (requested at first launch)
+Each data folder holds its own settings, paired cameras, logs and default `recordings` directory. To use an existing installation in the desktop app, stop the old service and open Sentinel with `--data-dir` pointing to its data folder. See the [Windows desktop guide](docs/Sentinel_Desktop.md#data-and-existing-installations) for an example.
 
 ---
 

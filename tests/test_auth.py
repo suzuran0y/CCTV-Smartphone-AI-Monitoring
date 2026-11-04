@@ -47,6 +47,7 @@ def test_access_panel_is_collapsed_and_keeps_controls_inside(system):
     ("POST", "/api/ingest/enable"), ("POST", "/api/ingest/disable"),
     ("POST", "/api/snapshot"), ("POST", "/api/system/shutdown"),
     ("POST", "/api/devices/pairing-code"), ("DELETE", "/api/devices/anything"),
+    ("POST", "/api/auth/remember"),
 ])
 def test_visitors_and_device_tokens_cannot_administer(system, method, path):
     app, auth, _, *_ = system
@@ -88,6 +89,31 @@ def test_csrf_logout_and_live_admin_reset(system):
     assert client.get("/api/config").status_code == 401
     assert auth.login(token) is None
     assert auth.login(replacement)
+
+
+def test_remembered_session_is_opt_in_and_revocable(system):
+    app, auth, token, *_ = system
+    client = authenticate(app.test_client(), auth, token)
+    assert client.get_cookie("sentinel_session").max_age is None
+    assert client.get("/api/auth/status").json["remembered"] is False
+    assert client.post("/api/auth/remember", json={"remember": True},
+                       headers={"X-CSRF-Token": "invalid"}).status_code == 403
+    assert client.post("/api/auth/remember", json={"remember": "true"}).status_code == 400
+
+    assert client.post("/api/auth/remember", json={"remember": True}).status_code == 200
+    remembered = client.get_cookie("sentinel_session")
+    assert remembered.max_age == AuthStore.REMEMBER_SECONDS
+    assert remembered.http_only and remembered.same_site == "Strict"
+    assert remembered.value != token
+    assert client.get("/api/auth/status").json["remembered"] is True
+    assert client.post("/api/auth/remember", json={"remember": False}).status_code == 200
+    assert client.get_cookie("sentinel_session").max_age is None
+    assert client.get("/api/auth/status").json["remembered"] is False
+
+    assert client.post("/api/auth/remember", json={"remember": True}).status_code == 200
+    assert client.post("/api/auth/logout").status_code == 200
+    client.set_cookie("sentinel_session", remembered.value)
+    assert client.get("/api/config").status_code == 401
 
 
 def test_pair_upload_revoke_and_single_use(system):

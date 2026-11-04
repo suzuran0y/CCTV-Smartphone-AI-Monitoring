@@ -1,0 +1,27 @@
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; color: #182338; background: #f3f6fb;
+  font: 14px/1.45 "Segoe UI", "Microsoft YaHei UI", sans-serif; }
+.launcher-bar, footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; background: #fff; border-bottom: 1px solid #dbe4ef; }
+.brand { font-size: 17px; margin-right: auto; }
+.brand span { color: #4c607c; font-size: 13px; }
+.service-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button, select, input { font: inherit; color: inherit; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid #b8c6da; background: #fff; }
+button { cursor: pointer; background: #f7faff; }
+button.primary { background: #e4efff; border-color: #74a1df; }
+button:hover:not(:disabled) { background: #dceaff; }
+button:active:not(:disabled) { background: #cbdcf5; }
+button:disabled { opacity: .5; cursor: default; }
+:focus-visible { outline: 2px solid #205fc1; outline-offset: 2px; }
+main { display: grid; flex: 1; min-height: 0; overflow: auto; }
+.card { border: 1px solid #dbe4ef; border-radius: 12px; padding: 16px; background: #fff; }
+.welcome { margin: auto; max-width: 540px; }
+.token-panel { margin: 8px 12px; padding: 8px 12px; }
+.token-panel p { margin: 4px 0; }
+.token-panel input { width: min(360px, 95%); }
+iframe { width: 100%; height: 100%; border: 0; background: white; }
+footer { border: 0; border-top: 1px solid #dbe4ef; font-size: 12px; }
+#error { color: #a22020; overflow-wrap: anywhere; }
