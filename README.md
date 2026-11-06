@@ -17,11 +17,11 @@ This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech R
 Sentinel is a distributed real-time vision system framework for local area networks (LAN).
 
 <p align="center">
-  <img src="assets/desktop-luna.png" alt="Sentinel Desktop in Windows XP Luna Blue with Live View, camera address, and Settings" width="92%">
+  <img src="assets/desktop-hero.svg" alt="Sentinel running with a live camera feed and AI monitoring results" width="92%">
 </p>
 
 <p align="center">
-  <em>Figure 1 – Sentinel Desktop (Windows XP theme· Luna Blue, with a sample feed)</em>
+  <em>Figure 1 – Sentinel in operation</em>
 </p>
 
 ♻️ It repurposes unused Android devices as network camera nodes, enabling:
@@ -978,19 +978,19 @@ Changing Output Root switches the browser to that directory; old directories rem
 
 #### 4.3.13. Desktop Appearance
 
-Use **Appearance** in the desktop toolbar to switch between **Default · Light**, **Default · Dark**, and **Windows XP · Luna Blue**. Sentinel remembers the selected theme. The live view and current sign-in stay open while you switch. [Luna Blue is shown in Figure 1](#top).
+Use **Appearance** in the desktop toolbar to switch between **Default · Light**, **Default · Dark**, and **Windows XP · Luna Blue**. Sentinel remembers the selected theme. The live view and current sign-in stay open while you switch. [The light appearance is shown in Figure 1](#top).
 
 <p align="center">
-  <img src="assets/desktop-light.png" alt="Sentinel Desktop in the default light theme" width="88%">
+  <img src="assets/desktop-dark.png" alt="Sentinel running in the default dark theme with live video and AI results" width="88%">
 </p>
 
-<p align="center"><em>Sentinel Desktop – Default · Light</em></p>
+<p align="center"><em>Default · Dark</em></p>
 
 <p align="center">
-  <img src="assets/desktop-dark.png" alt="Sentinel Desktop in the default dark theme" width="88%">
+  <img src="assets/desktop-luna.png" alt="Sentinel running in Windows XP Luna Blue with live video and AI results" width="88%">
 </p>
 
-<p align="center"><em>Sentinel Desktop – Default · Dark</em></p>
+<p align="center"><em>Windows XP · Luna Blue</em></p>
 
 ---
 
@@ -1094,7 +1094,7 @@ It is recommended to understand the purpose of each parameter before enabling th
 | **Base URL** | String (endpoint URL) | Custom third-party / local model service URL | Can be left empty for built-in Providers; usually required for `openai_compatible`. |
 | **Provider API Key** | String (key) | Generic model service credential | Must be obtained from the provider. See [4.6. Third-party Model Integration](#sec46). |
 | **Timeout (sec)** | Number (seconds) | Timeout for one model request | Allowed range: 5–120 seconds; default: 30 seconds. |
-| **Legacy Ark Model** | String (model ID) | Backward-compatible Ark / Volcengine model field | Existing deployments can continue using `doubao-seed-2-0-mini-260215`. |
+| **Legacy Ark Model** | String (model ID) | Backward-compatible Ark / Volcengine model field | Used when Model ID is empty. Existing configurations may contain a retired model, so enter an available model in Model ID. |
 | **Legacy Ark API Key** | String (key) | Backward-compatible Ark / Volcengine API Key | Used as an Ark fallback only when the generic Provider API Key is empty. |
 | **OBSERVE Interval (sec)** | Number (seconds) | Minimum interval between model calls in OBSERVE state | Recommended 2–3 seconds. Too small increases token consumption. |
 | **Dwell Threshold (sec)** | Number (seconds) | Duration a target must persist before confirming an event | Recommended 3–5 seconds. Increasing reduces occasional false positives. |
@@ -1417,30 +1417,34 @@ Provider-specific environment variables:
 
 ---
 
-#### 4.6.5. Use the Default Ark / Volcengine Model
+#### 4.6.5. Use an Ark / Volcengine Model
 
-To keep using the original Volcengine Ark model, keep the default Provider:
+Activate a vision-capable model in the Ark console first. In Dashboard, select **Ark / Volcengine** and enter the following settings:
 
 ```json
 {
   "ai_provider": "ark",
-  "ark_model": "doubao-seed-2-0-mini-260215",
-  "ark_api_key": "YOUR_ARK_API_KEY"
+  "ai_model": "doubao-seed-2-0-mini-260428",
+  "ai_base_url": "https://ark.cn-beijing.volces.com/api/v3",
+  "ai_api_key": "YOUR_ARK_API_KEY"
 }
 ```
+
+Click **Apply**, then **Save**. In **AI Status → Model Info**, check that Model shows the selected model. A successful AI result confirms that the service can process the camera frame.
+
+The earlier example, `doubao-seed-2-0-mini-260215`, stopped service on October 22, 2026. The example above uses its recommended replacement. Check model availability in the console when configuring an installation. [Official model deprecation notice](https://docs.volcengine.com/docs/ark/model-deprecation-notice?lang=zh)
 
 You can also use environment variables:
 
 ```powershell
 $env:AI_PROVIDER = "ark"
+$env:AI_MODEL = "doubao-seed-2-0-mini-260428"
 $env:ARK_API_KEY = "YOUR_ARK_API_KEY"
 ```
 
-This is suitable when:
+`AI_MODEL` takes priority over Dashboard's **Model ID**, which takes priority over **Legacy Ark Model**. If the old model still appears in Model Info, check those fields. If your account uses a custom inference endpoint, enter its available `ep-…` ID in Model ID.
 
-- you want to keep using the existing Volcengine Ark model;
-- you do not want to change the existing Dashboard workflow;
-- you need backward compatibility with older configuration files.
+For `InvalidEndpoint.ClosedEndpoint`, check model retirement and endpoint status in the Ark console. Activate the replacement model and update Model ID, then click **Apply** and **Save**.
 
 ---
 
@@ -1649,7 +1653,7 @@ The current version information is as follows:
 - **CamFlow (Android source) Version**: v1.1.2
 - **Bundled CamFlow APK Version**: v1.1.2 (debug-signed)
 - **Documentation Version**: v1.1.6
-- **Last Updated**: 2026-11-05
+- **Last Updated**: 2026-11-06
 
 The Dashboard footer shows the current PC version. Continue using **CamFlow v1.1.2** with this PC release.
 

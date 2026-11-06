@@ -17,11 +17,11 @@
 Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框架。
 
 <p align="center">
-  <img src="assets/desktop-luna.png" alt="Windows XP Luna 蓝色主题下的 Sentinel 桌面窗口，显示实时预览、摄像头连接地址和设置面板" width="92%">
+  <img src="assets/desktop-hero.svg" alt="Sentinel 实际运行界面，展示实时摄像头画面和 AI 监控结果" width="92%">
 </p>
 
 <p align="center">
-  <em>图 1 – Sentinel 桌面端（Windows XP · Luna Blue，画面为演示示例）</em>
+  <em>图 1 – Sentinel 运行展示</em>
 </p>
 
 ♻️ 支持将闲置安卓设备转化为网络摄像头节点，实现：
@@ -996,19 +996,19 @@ Settings 中分别配置 **Frame stale after (sec)** 和 **Pause recording after
 
 #### 4.3.13. 桌面外观
 
-通过桌面工具栏的 **Appearance** 切换 **Default · Light**、**Default · Dark** 和 **Windows XP · Luna Blue**。Sentinel 会记住所选主题，切换时保持画面和当前登录状态。[Luna Blue 效果见图 1](#top)。
+通过桌面工具栏的 **Appearance** 切换 **Default · Light**、**Default · Dark** 和 **Windows XP · Luna Blue**。Sentinel 会记住所选主题，切换时保持画面和当前登录状态。[浅色效果见图 1](#top)。
 
 <p align="center">
-  <img src="assets/desktop-light.png" alt="默认浅色模式下的 Sentinel 桌面端" width="88%">
+  <img src="assets/desktop-dark.png" alt="默认深色模式下的 Sentinel，展示实际摄像头画面与 AI 结果" width="88%">
 </p>
 
-<p align="center"><em>Sentinel 桌面端 – 默认 · 浅色模式</em></p>
+<p align="center"><em>Default · Dark</em></p>
 
 <p align="center">
-  <img src="assets/desktop-dark.png" alt="默认深色模式下的 Sentinel 桌面端" width="88%">
+  <img src="assets/desktop-luna.png" alt="Windows XP Luna Blue 模式下的 Sentinel，展示实际摄像头画面与 AI 结果" width="88%">
 </p>
 
-<p align="center"><em>Sentinel 桌面端 – 默认 · 深色模式</em></p>
+<p align="center"><em>Windows XP · Luna Blue</em></p>
 
 ---
 
@@ -1106,7 +1106,7 @@ Dashboard 页面的 AI 模块由配置设置区与信息输出区构成：
 | **Base URL** | 字符串（接口地址） | 自定义第三方 / 本地模型服务地址 | 内置 Provider 可留空；`openai_compatible` 通常需要填写。 |
 | **Provider API Key** | 字符串（密钥） | 通用模型服务访问凭证 | 需要到模型提供方获取并填入，请查看 [4.6. 第三方模型调用](#sec46)。 |
 | **Timeout (sec)** | 数字（秒） | 单次模型请求超时时间 | 允许 5–120 秒，默认 30 秒。 |
-| **Legacy Ark Model** | 字符串（模型 ID） | 兼容旧版 Ark / 火山方舟模型字段 | 默认可继续使用 `doubao-seed-2-0-mini-260215`。 |
+| **Legacy Ark Model** | 字符串（模型 ID） | 兼容旧版 Ark / 火山方舟模型字段 | Model ID 为空时使用此字段。旧配置可能仍保留已下线模型，请在 Model ID 中填写可用模型。 |
 | **Legacy Ark API Key** | 字符串（密钥） | 兼容旧版 Ark / 火山方舟 API Key | 仅在通用 Provider API Key 为空时作为 Ark 回退使用。 |
 | **OBSERVE Interval (sec)** | 数字（秒） | 控制 OBSERVE 状态下模型调用的最小间隔 | 推荐 2–3 秒，过小会增加 token 消耗。 |
 | **Dwell Threshold (sec)** | 数字（秒） | 目标持续存在多久才确认事件 | 推荐 3–5 秒，适当调大可减少偶发误报。 |
@@ -1412,30 +1412,34 @@ Provider 专用环境变量：
 
 ---
 
-#### 4.6.5. 使用默认 Ark / 火山方舟模型
+#### 4.6.5. 使用 Ark / 火山方舟模型
 
-如果希望继续使用原有火山方舟模型，可保持默认 Provider：
+先在火山方舟控制台开通支持视觉理解的模型，再在 Dashboard 选择 **Ark / Volcengine**，填写以下内容：
 
 ```json
 {
   "ai_provider": "ark",
-  "ark_model": "doubao-seed-2-0-mini-260215",
-  "ark_api_key": "YOUR_ARK_API_KEY"
+  "ai_model": "doubao-seed-2-0-mini-260428",
+  "ai_base_url": "https://ark.cn-beijing.volces.com/api/v3",
+  "ai_api_key": "YOUR_ARK_API_KEY"
 }
 ```
+
+点击 **Apply**，再点击 **Save**。在 **AI Status → Model Info** 确认 Model 显示所选模型。AI 正常返回结果后，即可确认服务能够处理摄像头画面。
+
+旧示例中的 `doubao-seed-2-0-mini-260215` 已于 2026 年 10 月 22 日停止服务，上述示例使用官方建议的替代模型。实际配置时，请以控制台中的可用模型为准。[官方模型下线公告](https://docs.volcengine.com/docs/ark/model-deprecation-notice?lang=zh)
 
 也可以使用环境变量：
 
 ```powershell
 $env:AI_PROVIDER = "ark"
+$env:AI_MODEL = "doubao-seed-2-0-mini-260428"
 $env:ARK_API_KEY = "YOUR_ARK_API_KEY"
 ```
 
-适用场景：
+`AI_MODEL` 的优先级高于 Dashboard 的 **Model ID**，后者又高于 **Legacy Ark Model**。如果 Model Info 仍显示旧模型，请依次检查这些字段。使用自定义推理接入点的账号，可在 Model ID 中填写可用的 `ep-…` 接入点 ID。
 
-- 希望继续使用原有火山方舟模型；
-- 不希望改动原有 Dashboard 使用习惯；
-- 需要保持旧配置兼容。
+遇到 `InvalidEndpoint.ClosedEndpoint` 时，请在方舟控制台检查模型下线情况及接入点状态，开通替代模型并修改 Model ID，再点击 **Apply** 和 **Save**。
 
 ---
 
@@ -1643,7 +1647,7 @@ Sentinel 系统由 **PC 端服务程序 + Web Dashboard + Android 端 CamFlow** 
 - **CamFlow（Android 源码）版本**：v1.1.2
 - **仓库内 CamFlow APK 版本**：v1.1.2（debug-signed）
 - **本文档版本**：v1.1.6
-- **最后更新日期**：2026-11-05
+- **最后更新日期**：2026-11-06
 
 Dashboard 页脚显示当前 PC 版本。手机端继续使用 **CamFlow v1.1.2**。
 
