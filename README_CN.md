@@ -10,7 +10,7 @@
 <br>
 [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
-本项目已被 [科技爱好者周刊](#CR) 和 [科技补全](#CR) 收录。感谢他们的认可与支持。
+本项目已被 [科技爱好者周刊](#CR)、[科技补全](#CR)及 [Open Source](#CR)收录。感谢他们的认可与支持。
 
 🚀 最新更新（持续迭代中）：[v1.1.6 — 2026-11-05](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
@@ -73,7 +73,6 @@ Sentinel 是一个运行于局域网环境中的分布式实时视觉系统框�
   - [5.2. 数据存放位置](#sec52)
   - [5.3. 后续规划](#sec53)
   - [5.4. 使用与授权说明](#sec54)
-  - [5.5. 网络质量与排查说明](#network-quality)
 
 ---
 
@@ -619,7 +618,7 @@ volcenginesdkarkruntime        # AI 模块依赖
 
 ### 3.4. Android 端部署 [⌃](#top)
 
-**兼容性：** 当前认证服务器需搭配 CamFlow v1.1.2，v1.1.0／v1.1.1 无法匿名上传。部署前请阅读[网络质量与排查说明](#network-quality)。
+**兼容性：** 当前认证服务器需搭配 CamFlow v1.1.2，v1.1.0／v1.1.1 无法匿名上传。
 
 Android 端应用 CamFlow 负责了项目的摄像功能与图像上传。应用源码位于项目库路径：
 
@@ -1702,18 +1701,6 @@ Sentinel 项目基于 MIT License 开源发布。
 
 ---
 
-<a id="sec55"></a>
-<a id="known-issues"></a>
-<a id="network-quality"></a>
-
-### 5.5. 网络质量与排查说明 [⌃](#top)
-
-此前在 Sentinel v1.1.4／CamFlow v1.1.2 测试中出现的连接／响应超时及网页画面长时间不更新，已由维护者确认是测试环境 Wi-Fi 信号差所致。该反馈不再列为程序待修复问题；本次澄清无需修改上传代码。
-
-使用时请确保手机与 PC 之间的可信局域网连接稳定。若遇到超时或刷新缓慢，优先检查 Wi-Fi 信号与连接质量，再按 [CamFlow 上传诊断](CamFlow_UserGuide_CN.md#upload-diagnostics)检查配对、Ingest 和请求阶段。其他环境中的类似现象仍需具体排查，不能仅凭超时判断原因；分享信息时仅提供相关诊断行，不要发送令牌或配置文件。
-
----
-
 <a id="CR"></a>
 
 **社区认可 ⭐**
@@ -1723,7 +1710,7 @@ Sentinel 项目基于 MIT License 开源发布。
 <table align="center">
 <tr>
 
-<td align="center" width="50%">
+<td align="center" width="33.33%">
 
 <a href="https://github.com/ruanyf/weekly">
   <img src="https://github.com/ruanyf.png" width="115"/>
@@ -1736,7 +1723,7 @@ Sentinel 项目基于 MIT License 开源发布。
 
 </td>
 
-<td align="center" width="50%">
+<td align="center" width="33.33%">
 
 <a href="https://space.bilibili.com/67079745">
   <img src="https://i0.hdslb.com/bfs/face/8a70069e1dc9ab89c1d688c2cefd3596864315ea.jpg" width="115"/>
@@ -1746,6 +1733,19 @@ Sentinel 项目基于 MIT License 开源发布。
 
 <b>玄离199</b><br>
 <sub><a href="https://www.bilibili.com/video/BV1srwxzMEdn/">科技补全 #93</a></sub>
+
+</td>
+
+<td align="center" width="33.33%">
+
+<a href="https://t.me/open_source_friend">
+  <img src="https://t.me/i/userpic/320/open_source_friend.jpg" width="115"/>
+</a>
+
+<br>
+
+<b>Черный Треугольник</b><br>
+<sub><a href="https://t.me/open_source_friend/5845">Open Source #8/4</a></sub>
 
 </td>
 

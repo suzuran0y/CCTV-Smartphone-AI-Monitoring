@@ -10,7 +10,7 @@
 <br>
 [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
-This project has been featured by ruanyf's [weekly](#CR) and xuanli199's [Tech Review](#CR). We sincerely appreciate their recognition and support.
+This project has been featured by ruanyf's [weekly](#CR), xuanli199's [Tech Review](#CR), and Черный Треугольник's [Open Source](#CR). We sincerely appreciate their recognition and support.
 
 🚀 Latest Update (ongoing): [v1.1.6 — 2026-11-05](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
@@ -73,7 +73,6 @@ This project can be used both as a lightweight local monitoring system and as an
   - [5.2. Data Locations](#sec52)
   - [5.3. Roadmap](#sec53)
   - [5.4. Usage & License](#sec54)
-  - [5.5. Network Quality and Troubleshooting](#network-quality)
 
 ---
 
@@ -589,7 +588,7 @@ If you are using the Windows x64 package, keep the `Sentinel` folder intact and 
 
 ### 3.4. Android-side Deployment [⌃](#top)
 
-**Compatibility:** use CamFlow v1.1.2 with this authenticated server; v1.1.0 / v1.1.1 cannot upload anonymously. Before deployment, review [network quality and troubleshooting](#network-quality).
+**Compatibility:** use CamFlow v1.1.2 with this authenticated server; v1.1.0 / v1.1.1 cannot upload anonymously.
 
 The Android application CamFlow is responsible for camera capture and image upload.  
 The application source code is located in the repository path:
@@ -1711,18 +1710,6 @@ Copyright © 2026 Suzuran0y
 
 ---
 
-<a id="sec55"></a>
-<a id="known-issues"></a>
-<a id="network-quality"></a>
-
-### 5.5. Network Quality and Troubleshooting [⌃](#top)
-
-The connection/response timeouts and prolonged web-image stalls reported during Sentinel v1.1.4 / CamFlow v1.1.2 testing were confirmed by the maintainer to have been caused by poor Wi-Fi signal in the test environment. This report is no longer listed as an unresolved software defect; no upload-code change was needed for this clarification.
-
-Keep the phone and PC on a stable, trusted LAN. If timeouts or slow refresh occur, check Wi-Fi signal and connection quality first, then use [CamFlow upload diagnostics](CamFlow_UserGuide.md#upload-diagnostics) to check pairing, Ingest and request phases. Other occurrences still need diagnosis; a timeout alone does not identify its cause. Share only relevant diagnostic lines, never tokens or configuration files.
-
----
-
 <a id="CR"></a>
 
 **Community Recognition ⭐**
@@ -1732,7 +1719,7 @@ Keep the phone and PC on a stable, trusted LAN. If timeouts or slow refresh occu
 <table align="center">
 <tr>
 
-<td align="center" width="50%">
+<td align="center" width="33.33%">
 
 <a href="https://github.com/ruanyf/weekly">
   <img src="https://github.com/ruanyf.png" width="115"/>
@@ -1745,7 +1732,7 @@ Keep the phone and PC on a stable, trusted LAN. If timeouts or slow refresh occu
 
 </td>
 
-<td align="center" width="50%">
+<td align="center" width="33.33%">
 
 <a href="https://space.bilibili.com/67079745">
   <img src="https://i0.hdslb.com/bfs/face/8a70069e1dc9ab89c1d688c2cefd3596864315ea.jpg" width="115"/>
@@ -1755,6 +1742,19 @@ Keep the phone and PC on a stable, trusted LAN. If timeouts or slow refresh occu
 
 <b>xuanli199</b><br>
 <sub><a href="https://www.bilibili.com/video/BV1srwxzMEdn/">Tech Review #93</a></sub>
+
+</td>
+
+<td align="center" width="33.33%">
+
+<a href="https://t.me/open_source_friend">
+  <img src="https://t.me/i/userpic/320/open_source_friend.jpg" width="115"/>
+</a>
+
+<br>
+
+<b>Черный Треугольник</b><br>
+<sub><a href="https://t.me/open_source_friend/5845">Open Source #8/4</a></sub>
 
 </td>
 
