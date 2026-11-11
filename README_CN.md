@@ -1744,7 +1744,7 @@ Sentinel 项目基于 MIT License 开源发布。
 
 <br>
 
-<b>Черный Треугольник</b><br>
+<b>Треугольник</b><br>
 <sub><a href="https://t.me/open_source_friend/5845">Open Source #8/4</a></sub>
 
 </td>
