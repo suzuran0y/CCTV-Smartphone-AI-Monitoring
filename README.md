@@ -10,7 +10,7 @@
 <br>
 [🇺🇸 English](README.md) | [🇨🇳 中文](README_CN.md)
 
-This project has been featured by ruanyf's [weekly](#CR), xuanli199's [Tech Review](#CR), and Черный Треугольник's [Open Source](#CR). We sincerely appreciate their recognition and support.
+This project has been featured by ruanyf's [weekly](#CR), xuanli199's [Tech Review](#CR), and Треугольник's [Open Source](#CR). We sincerely appreciate their recognition and support.
 
 🚀 Latest Update (ongoing): [v1.1.6 — 2026-11-05](https://github.com/suzuran0y/CCTV-Smartphone-AI-Monitoring/issues/2)
 
@@ -1753,7 +1753,7 @@ Copyright © 2026 Suzuran0y
 
 <br>
 
-<b>Черный Треугольник</b><br>
+<b>Треугольник</b><br>
 <sub><a href="https://t.me/open_source_friend/5845">Open Source #8/4</a></sub>
 
 </td>
